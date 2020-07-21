@@ -1,0 +1,1753 @@
+---
+title: "Mobility Model Comparison (Furthest extent OD)"
+author: "Andrew J K Conlan"
+date: "16/03/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,cache=TRUE)
+```
+
+```{r load, echo=FALSE, message=FALSE,warning=FALSE, fig.path='Figs/'}
+require(sf)
+require(reshape2)
+require(tidyverse)
+require(ggplot2)
+require(rstan)
+require(loo)
+require(tidybayes)
+require(patchwork)
+require(scales)
+require(xtable)
+require(ggpmisc)
+require(boot)
+require(lme4)
+
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+
+load('../../lads_map.RData')
+LADS_centroid = st_centroid(lads_map[1:dim(lads_map)[1],])
+
+load('../flux/mobility_flux_furthest.RData')
+load('../flux/total_census_flux.RData')
+load('../flux/census_flux.RData')
+
+UKcensus_flows_lads <- EWcensus_flows_lads %>% mutate(country='England & Wales')
+UKcensus_flows_lads <- UKcensus_flows_lads %>% 
+  bind_rows(scotland_census_flows_lads %>% mutate(country='Scotland'))
+UKcensus_flows_lads <- UKcensus_flows_lads %>% 
+  bind_rows(NI_census_flows_lads %>% mutate(country='Northern Ireland'))
+
+ukoutline <- st_geometry(st_union(lads_map[c(1:391),]))
+
+load('../census/CDE/CDE_ECensus.RData')
+load('../census/CDE/CDE_SCensus.RData')
+load('../census/CDE/CDE_WCensus.RData')
+load('../census/CDE/CDE_NICensus.RData')
+
+load('../census/CDP/CDP_ECensus.RData')
+load('../census/CDP/CDP_SCensus.RData')
+load('../census/CDP/CDP_WCensus.RData')
+load('../census/CDP/CDP_NICensus.RData')
+
+load('../census/CDO/CDO_ECensus.RData')
+load('../census/CDO/CDO_SCensus.RData')
+load('../census/CDO/CDO_WCensus.RData')
+load('../census/CDO/CDO_NICensus.RData')
+
+load('../census/ERadiation/ERad_ECensus.RData')
+load('../census/ERadiation/ERad_SCensus.RData')
+load('../census/ERadiation/ERad_WCensus.RData')
+load('../census/ERadiation/ERad_NICensus.RData')
+
+load('../census/Impedance/Imp_ECensus.RData')
+load('../census/Impedance/Imp_SCensus.RData')
+load('../census/Impedance/Imp_WCensus.RData')
+load('../census/Impedance/Imp_NICensus.RData')
+
+load('../census/Stoufer/Sto_ECensus.RData')
+load('../census/Stoufer/Sto_CSCensus.RData')
+load('../census/Stoufer/Sto_WCensus.RData')
+load('../census/Stoufer/Sto_NICensus.RData')
+
+load('../census/IO/IO_ECensus.RData')
+load('../census/IO/IO_CSCensus.RData')
+load('../census/IO/IO_WCensus.RData')
+load('../census/IO/IO_NICensus.RData')
+
+load('./ERadiation/uk/ERadTotal.RData')
+load('./ERadiation/uk/ERadUnder18.RData')
+load('./ERadiation/uk/ERadEducation.RData')
+load('./ERadiation/uk/ERadEmployed.RData')
+load('./ERadiation/uk/ERadNEET.RData')
+
+load('./CDE/uk/CDETotal.RData')
+load('./CDE/uk/CDEUnder18.RData')
+load('./CDE/uk/CDEEducation.RData')
+load('./CDE/uk/CDEEmployed.RData')
+load('./CDE/uk/CDENEET.RData')
+
+load('./CDO/uk/CDOTotal.RData')
+load('./CDO/uk/CDOUnder18.RData')
+load('./CDO/uk/CDOEducation.RData')
+load('./CDO/uk/CDOEmployed.RData')
+load('./CDO/uk/CDONEET.RData')
+
+load('./CDP/uk/CDPTotal.RData')
+load('./CDP/uk/CDPUnder18.RData')
+load('./CDP/uk/CDPEducation.RData')
+load('./CDP/uk/CDPEmployed.RData')
+load('./CDP/uk/CDPNEET.RData')
+
+load('./IO/uk/IOTotal.RData')
+load('./IO/uk/IOUnder18.RData')
+load('./IO/uk/IOEducation.RData')
+load('./IO/uk/IOEmployed.RData')
+load('./IO/uk/IONEET.RData')
+
+load('./Stoufer/uk/StoTotal.RData')
+load('./Stoufer/uk/StoUnder18.RData')
+load('./Stoufer/uk/StoEducation.RData')
+load('./Stoufer/uk/StoEmployed.RData')
+load('./Stoufer/uk/StoNEET.RData')
+
+load('./Impedance/uk/ImpTotal.RData')
+load('./Impedance/uk/ImpUnder18.RData')
+load('./Impedance/uk/ImpEducation.RData')
+load('./Impedance/uk/ImpEmployed.RData')
+load('./Impedance/uk/ImpNEET.RData')
+
+load('./ERadiation/subnational/E_ERadTotal.RData')
+load('./ERadiation/subnational/W_ERadTotal.RData')
+load('./ERadiation/subnational/S_ERadTotal.RData')
+load('./ERadiation/subnational/NI_ERadTotal.RData')
+
+load('./CDP/subnational/E_CDPTotal.RData')
+load('./CDP/subnational/W_CDPTotal.RData')
+load('./CDP/subnational/S_CDPTotal.RData')
+load('./CDP/subnational/NI_CDPTotal.RData')
+
+load('./CDE/subnational/E_CDETotal.RData')
+load('./CDE/subnational/W_CDETotal.RData')
+load('./CDE/subnational/S_CDETotal.RData')
+load('./CDE/subnational/NI_CDETotal.RData')
+
+load('./CDO/subnational/E_CDOTotal.RData')
+load('./CDO/subnational/W_CDOTotal.RData')
+load('./CDO/subnational/S_CDOTotal.RData')
+load('./CDO/subnational/NI_CDOTotal.RData')
+
+load('./IO/subnational/E_IOTotal.RData')
+load('./IO/subnational/W_IOTotal.RData')
+load('./IO/subnational/S_IOTotal.RData')
+load('./IO/subnational/NI_IOTotal.RData')
+
+load('./Impedance/subnational/E_ImpTotal.RData')
+load('./Impedance/subnational/W_ImpTotal.RData')
+load('./Impedance/subnational/S_ImpTotal.RData')
+load('./Impedance/subnational/NI_ImpTotal.RData')
+
+load('./Stoufer/subnational/E_StoTotal.RData')
+load('./Stoufer/subnational/W_StoTotal.RData')
+load('./Stoufer/subnational/S_StoTotal.RData')
+load('./Stoufer/subnational/NI_StoTotal.RData')
+
+#load('./CDE/age/CDEUnder18.RData')
+load('./CDE/age/CDE18_30.RData')
+load('./CDE/age/CDE30_60.RData')
+load('./CDE/age/CDE60_100.RData')
+
+#load('./CDO/age/CDOUnder18.RData')
+load('./CDO/age/CDO18_30.RData')
+load('./CDO/age/CDO30_60.RData')
+load('./CDO/age/CDO60_100.RData')
+
+#load('./CDP/age/CDPUnder18.RData')
+load('./CDP/age/CDP18_30.RData')
+load('./CDP/age/CDP30_60.RData')
+load('./CDP/age/CDP60_100.RData')
+
+#load('./ERadiation/age/ERadUnder18.RData')
+load('./ERadiation/age/ERad18_30.RData')
+load('./ERadiation/age/ERad30_60.RData')
+load('./ERadiation/age/ERad60_100.RData')
+
+#load('./IO/age/IOUnder18.RData')
+load('./IO/age/IO18_30.RData')
+load('./IO/age/IO30_60.RData')
+load('./IO/age/IO60_100.RData')
+
+#load('./Impedance/age/ImpUnder18.RData')
+load('./Impedance/age/Imp18_30.RData')
+load('./Impedance/age/Imp30_60.RData')
+load('./Impedance/age/Imp60_100.RData')
+
+#load('./Stoufer/age/StoUnder18.RData')
+load('./Stoufer/age/Sto18_30.RData')
+load('./Stoufer/age/Sto30_60.RData')
+load('./Stoufer/age/Sto60_100.RData')
+
+# Raw BBC flux matrices
+total_flux <- as.matrix(read.csv('../flux/total_flux_furthest.csv')[,2:392])
+under18_flux <- as.matrix(read.csv('../flux/under18_flux_furthest.csv')[,2:392])
+education_flux <- as.matrix(read.csv('../flux/education_flux_furthest.csv')[,2:392])
+employed_flux <- as.matrix(read.csv('../flux/employed_flux_furthest.csv')[,2:392])
+neet_flux <- as.matrix(read.csv('../flux/neet_flux_furthest.csv')[,2:392])
+
+a18_30_flux <- as.matrix(read.csv('../flux/age/a18_30_flux_furthest.csv')[,2:392])
+a30_60_flux <- as.matrix(read.csv('../flux/age/a30_60_flux_furthest.csv')[,2:392])
+a60_100_flux <- as.matrix(read.csv('../flux/age/a60_100_flux_furthest.csv')[,2:392])
+
+
+```
+
+
+
+# Data Sets
+
+In this report we analyse origin-destination flux matrices based on the furthest extent definition. We fit each model to the total BBC mobility data set ($\Omega^{T}$) and three stratifications by employment status ($\Omega^{U}$,$\Omega^{Ed}$, $\Omega^{Em}$, $\Omega^{N}$), age of user ($\Omega^{U}$,$\Omega^{18-30}$, $\Omega^{30-60}$, $\Omega^{60-100}$) and member nation of the UK ($\Omega^{E}$,$\Omega^{W}$, $\Omega^{S}$, $\Omega^{NI}$).
+
+We compare the estimated mobility models to estimates from the 2011 census commuting flow data for England ($\Omega^{CE}$), Wales ($\Omega^{CW}$), Scotland ($\Omega^{CS}$) and Northern Ireland ($\Omega^{CNI}$). 
+
+We estimate posterior distributions for each model using hamiltonian MCMC (as implemented by the Stan package http://mc-stan.org/). To assess model fit and provide a basis for model selection we use approximate leave-one-out cross validation as implemented in the loo package (doi:10.1007/s11222-016-9696-4).
+
+```{r census flux, echo=FALSE, message=FALSE, fig.path='Figs/'}
+#1-326 English lads
+#327-337 NI lads
+#338-369 Scottish lads
+#370-391 Welsh lads
+
+p1=ggplot(UKcensus_flows_lads,aes(x=from,y=to,fill=freq)) + 
+     geom_tile() + scale_fill_distiller(palette='Spectral',limits=c(1,1e6),trans='log10',breaks=c(1,1e1,1e2,1e3,1e4,1e5,1e6),labels=c(0,1,2,3,4,5,6),name='log10(count)') +  
+     theme(axis.ticks=element_blank(),axis.text=element_blank(),legend.position='bottom') + ggtitle('A') + 
+  annotate('rect',xmin=1,xmax=326,ymin=1,ymax=326,fill=NA,colour='black',linetype=1) +
+  annotate('rect',xmin=327,xmax=337,ymin=327,ymax=337,fill=NA,colour='black',linetype=2) +
+  annotate('rect',xmin=338,xmax=369,ymin=338,ymax=369,fill=NA,colour='blue',linetype=3) + 
+  annotate('rect',xmin=370,xmax=391,ymin=370,ymax=391,fill=NA,colour='red',linetype=4)
+
+
+```
+
+The per capita probability of moving to a different LAD each day varies by category:
+
+```{r move_summary_tables,echo=FALSE, fig.path='Figs/'}
+
+# Summary Tables
+
+BBCcatmoves = tibble(employment_cat='Under 18',N=sum(under18_flux),movers=N-sum(diag(under18_flux)),p_move=movers/N)
+BBCcatmoves = BBCcatmoves %>% bind_rows(tibble(employment_cat='Education',N=sum(education_flux),movers=N-sum(diag(education_flux)),p_move=movers/N))
+BBCcatmoves = BBCcatmoves %>% bind_rows(tibble(employment_cat='Employed',N=sum(employed_flux),movers=N-sum(diag(employed_flux)),p_move=movers/N))
+BBCcatmoves = BBCcatmoves %>% bind_rows(tibble(employment_cat='NEET',N=sum(neet_flux),movers=N-sum(diag(neet_flux)),p_move=movers/N))
+BBCcatmoves = BBCcatmoves %>% mutate(cat_prop = N/sum(N))
+BBCcatmoves = BBCcatmoves %>% bind_rows(tibble(employment_cat='Total',N=sum(total_flux),movers=N-sum(diag(total_flux)),p_move=movers/N,cat_prop=NA))
+
+print(BBCcatmoves)
+
+BBCagemoves = tibble(age_cat='Under 18',N=sum(under18_flux),movers=N-sum(diag(under18_flux)),p_move=movers/N)
+BBCagemoves = BBCagemoves %>% bind_rows(tibble(age_cat='18-30',N=sum(a18_30_flux),movers=N-sum(diag(a18_30_flux)),p_move=movers/N))
+BBCagemoves = BBCagemoves %>% bind_rows(tibble(age_cat='30-60',N=sum(a30_60_flux),movers=N-sum(diag(a30_60_flux)),p_move=movers/N))
+BBCagemoves = BBCagemoves %>% bind_rows(tibble(age_cat='60-100',N=sum(a60_100_flux),movers=N-sum(diag(a60_100_flux)),p_move=movers/N))
+
+BBCagemoves = BBCagemoves %>% mutate(cat_prop = N/sum(N))
+
+print(BBCagemoves)
+
+```
+
+but also by LAD. 
+
+```{r flux_by_lads ,echo=FALSE,message=FALSE,fig.path='Figs/',fig.width=7, fig.height=7*1.75}
+
+census_N = UKcensus_flows_lads %>% group_by(from) %>% summarise(commuters=sum(freq))
+census_commuters = UKcensus_flows_lads %>% filter(from!=to) %>% group_by(from) %>% summarise(commuters=sum(freq))
+
+BBCmoves_by_LAD = tibble(home_lad=lads_map$lad17cd,N=rowSums(total_flux),commuters=rowSums(total_flux)-diag(total_flux),p_move=commuters/N)
+
+BBCmoves_by_LAD <- BBCmoves_by_LAD %>% mutate(census_N=census_N$commuters,census_commuters=census_commuters$commuters,census_p_move=census_commuters/census_N)
+
+
+zm = lads_map  %>% left_join(BBCmoves_by_LAD %>% mutate(lad17cd=home_lad))
+
+f2 = ggplot(st_sf(zm[1:406,]),aes(fill=p_move)) + 
+  geom_sf(size=0.0) +
+  scale_fill_gradient2(name =expression(p[BBC]),midpoint=mean(BBCmoves_by_LAD$p_move),low=muted('blue'),high=muted('red')) +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) + 
+  theme(legend.position = "bottom") + 
+  theme(text = element_text(size=8)) + 
+  geom_sf(data=ukoutline,fill=NA,size=0.01) 
+
+f1 = ggplot(st_sf(zm[1:406,]),aes(fill=N/TotPop)) + geom_sf(size=0.0) +
+  scale_fill_gradient2(name='Users (per capita)',midpoint=log10(mean(zm$N/zm$TotPop)),low=muted('blue'),high=muted('red'),trans='log10') +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) + 
+        theme(legend.position = "bottom") + 
+        theme(text = element_text(size=8)) + 
+        geom_sf(data=ukoutline,fill=NA,size=0.01) 
+
+df=tibble(census_p_move=zm$census_p_move,p_move=zm$p_move)
+
+summary(lm(df$p_move ~ df$census_p_move))
+
+print(confint(lm(df$p_move ~ df$census_p_move)))
+
+g1=ggplot(df,aes(x=census_p_move,y=p_move)) + geom_point() + 
+  geom_smooth(method='lm',se=FALSE) + 
+  stat_poly_eq(formula = df$p_move ~ df$census_p_move,
+               eq.with.lhs = "italic(p[BBC])~`=`~",
+               eq.x.rhs = "~italic(p[C])",
+               aes(label = paste(..eq.label.., ..rr.label.., sep = "*plain(\",\")~")),
+               parse = TRUE) +
+  labs(y=expression(italic(p[BBC])),x=expression(italic(p[C]))) + 
+  annotate("text",x=df$census_p_move[c(294,329)]+c(0.15,0.1),y=df$p_move[c(294,329)],label=c('City of London','Belfast'))
+
+(f2+g1)
+
+```
+
+A linear regression of $p_{BBC}$ against $p_{C}$ demonstrates a strong linear relationship between the probability of moving as estimated from census data and the BBC total data set (Adjusted R-squared 0.71). The probability of moving to a different LAD per day is $\sim$ 10% (7-12% 95% CI) greater in the BBC data set.
+
+The coverage of the BBC mobility data set - with a median of 81 users per LAD (range 2-948) - means for the majority of LADS the raw data is too sparse to estimate movement rates for each strata of the BBC model. To address this, we estimate a generalised linear model (with logit link and random effects at the LAD level) to model the per LAD probability of moving and how this is adjusted for each strata (age or employment status). We estimate the random effects models using the lme4 package.
+
+\[ p_{BBC} \sim~ group + (1 | LAD) \]
+
+
+```{r age_ran_effect,echo=FALSE,message=FALSE,fig.path='Figs/',fig.width=7, fig.height=7}
+
+# Fit random effects model to estimate p_move by LAD and age class
+
+age_df<-tibble(move=rowSums(under18_flux)-diag(under18_flux),N=rowSums(under18_flux),group='Under 18',LAD=1:391)
+age_df<-age_df %>% bind_rows(tibble(move=rowSums(a18_30_flux)-diag(a18_30_flux),N=rowSums(a18_30_flux),group='18-30',LAD=1:391))
+age_df<-age_df %>% bind_rows(tibble(move=rowSums(a30_60_flux)-diag(a30_60_flux),N=rowSums(a30_60_flux),group='30-60',LAD=1:391))
+age_df<-age_df %>% bind_rows(tibble(move=rowSums(a60_100_flux)-diag(a60_100_flux),N=rowSums(a60_100_flux),group='60-100',LAD=1:391))
+
+age_df <- age_df %>% mutate(LAD = as.factor(LAD))
+age_df <- age_df %>% mutate(group = factor(group,levels=c('Under 18','18-30','30-60','60-100')))
+#m1  <- glm(cbind(move,N-move) ~ group,family='binomial',data=age_df)
+m1r <- glmer(cbind(move,N-move) ~ group + (1 | LAD),family='binomial',data=age_df)
+
+summary(m1r)
+
+fe<-exp(fixef(m1r))
+fe_conf <- exp(confint(m1r,method='Wald'))
+
+print(age_or<-tibble(group=c('18-30','30-60','60-100'),or=paste(round(fe[2:4],2),' (',round(fe_conf[3:5,1],2),',',round(fe_conf[3:5,2],2),')',sep='')))
+
+age_df <- age_df %>% mutate(pred_m1r=predict(m1r,type='response'))
+age_df <- age_df %>% mutate(group=factor(group,levels=c('Under 18', '18-30','30-60','60-100')))
+
+predFun <- function(fit) {
+  predict(fit,type='response')
+}
+bb <- bootMer(m1r,nsim=100,FUN=predFun, use.u = FALSE)
+
+age_df <- age_df %>% mutate(pred_m1r_stderr = apply(bb$t, 2, sd))
+
+ggplot(age_df,aes(x=LAD,y=pred_m1r,ymin=pred_m1r-pred_m1r_stderr,ymax=pred_m1r+pred_m1r_stderr)) + geom_point(position=position_dodge(1)) + geom_errorbar() + facet_wrap(~group) + ylab('Probability of Move')
+
+write.csv(age_df,file='../imputed_flux/moveProbByAgeLADS_furthest.csv')
+```
+
+```{r employment_ran_effect,echo=FALSE,message=FALSE,fig.path='Figs/',fig.width=7, fig.height=7}
+
+# Fit random effects model to estimate p_move by LAD and employment class
+
+emp_df<-tibble(move=rowSums(under18_flux)-diag(under18_flux),N=rowSums(under18_flux),group='Under 18',LAD=1:391)
+emp_df<-emp_df %>% bind_rows(tibble(move=rowSums(education_flux)-diag(education_flux),N=rowSums(education_flux),group='Education',LAD=1:391))
+emp_df<-emp_df %>% bind_rows(tibble(move=rowSums(employed_flux)-diag(employed_flux),N=rowSums(employed_flux),group='Employed',LAD=1:391))
+emp_df<-emp_df %>% bind_rows(tibble(move=rowSums(neet_flux)-diag(neet_flux),N=rowSums(neet_flux),group='NEET',LAD=1:391))
+
+emp_df <- emp_df %>% mutate(LAD = as.factor(LAD))
+emp_df <- emp_df %>% mutate(group = factor(group,levels=c('Under 18','Education','Employed','NEET')))
+#m1  <- glm(cbind(move,N-move) ~ group,family='binomial',data=emp_df)
+m2r <- glmer(cbind(move,N-move) ~ group + (1 | LAD),family='binomial',data=emp_df)
+
+summary(m2r)
+
+fe<-exp(fixef(m2r))
+fe_conf <- exp(confint(m2r,method='Wald'))
+
+print(emp_or<-tibble(group=c('Education','Employed','NEET'),or=paste(round(fe[2:4],2),' (',round(fe_conf[3:5,1],2),',',round(fe_conf[3:5,2],2),')',sep='')))
+
+emp_df <- emp_df %>% mutate(pred_m2r=predict(m1r,type='response'))
+emp_df <- emp_df %>% mutate(group=factor(group,levels=c('Under 18', 'Education','Employed','NEET')))
+
+predFun <- function(fit) {
+  predict(fit,type='response')
+}
+bb <- bootMer(m2r,nsim=100,FUN=predFun, use.u = FALSE)
+
+emp_df <- emp_df %>% mutate(pred_m2r_stderr = apply(bb$t, 2, sd))
+
+ggplot(emp_df,aes(x=LAD,y=pred_m2r,ymin=pred_m2r-pred_m2r_stderr,ymax=pred_m2r+pred_m2r_stderr)) + geom_point(position=position_dodge(1)) + geom_errorbar() + facet_wrap(~group) + ylab('Probability of Move')
+
+write.csv(emp_df,file='../imputed_flux/moveProbByEmpLADS_furthest.csv')
+```
+
+Raw flux matrices comparing the census work-flow data set (A) to stratified BBC flux matrices.
+
+```{r BBC flux, echo=FALSE, message=FALSE, fig.path='Figs/'}
+
+raw_flux<-as_tibble(melt(under18_flux)) %>% mutate(data='BBC Under 18')
+raw_flux<-raw_flux %>% bind_rows(as_tibble(melt(a18_30_flux)) %>% mutate(data='BBC 18-30'))
+raw_flux<-raw_flux %>% bind_rows(as_tibble(melt(a30_60_flux)) %>% mutate(data='BBC 30-60'))
+raw_flux<-raw_flux %>% bind_rows(as_tibble(melt(a60_100_flux)) %>% mutate(data='BBC 60-100'))
+
+raw_flux<-raw_flux %>% filter(value>0)
+
+p2=ggplot(raw_flux,aes(x=Var1,y=Var2,fill=value)) + 
+  geom_tile() + 
+  scale_fill_distiller(palette='Spectral',
+                       limits=c(1,1e6),trans='log10',
+                       breaks=c(1,1e1,1e2,1e3,1e4,1e5,1e6),
+                       labels=c(0,1,2,3,4,5,6),name='log10(count)') + 
+  theme(axis.ticks=element_blank(),axis.text=element_blank(),legend.position = 'none') +
+  facet_wrap(~factor(data,levels=c('BBC Under 18', 'BBC 18-30','BBC 30-60','BBC 60-100'))) + 
+  ggtitle('B') + xlab('from') + ylab('to')
+
+p1+p2
+
+raw_flux<-as_tibble(melt(under18_flux)) %>% mutate(data='BBC Under 18')
+raw_flux<-raw_flux %>% bind_rows(as_tibble(melt(education_flux)) %>% mutate(data='BBC Education'))
+raw_flux<-raw_flux %>% bind_rows(as_tibble(melt(employed_flux)) %>% mutate(data='BBC Employed'))
+raw_flux<-raw_flux %>% bind_rows(as_tibble(melt(neet_flux)) %>% mutate(data='BBC NEET'))
+
+raw_flux<-raw_flux %>% filter(value>0)
+
+p3=ggplot(raw_flux,aes(x=Var1,y=Var2,fill=value)) + 
+  geom_tile() + 
+  scale_fill_distiller(palette='Spectral',
+                       limits=c(1,1e6),trans='log10',
+                       breaks=c(1,1e1,1e2,1e3,1e4,1e5,1e6),
+                       labels=c(0,1,2,3,4,5,6),name='log10(count)') + 
+  theme(axis.ticks=element_blank(),axis.text=element_blank(),legend.position = 'none') +
+  facet_wrap(~factor(data,levels=c('BBC Under 18', 'BBC Education','BBC Employed','BBC NEET'))) + 
+  ggtitle('A') + xlab('from') + ylab('to')
+
+p3+p2
+
+```
+
+
+## PSIS diagnostic plots
+
+The approximate leave-one-out cross validation (LOO) method uses pareto smoothed importance sampling (PSIS-LOO) to efficiently estimate the predictive accuracy of a model (expected log pointwise predictive density, $\hat{elpd}$) and as a basis for model comparison and selection. The estimated shape parameter $\hat{k}$ can be used to judge the reliability of the estimate of $\hat{elpd}$ for each data point (or in our case for each LAD corresponding to a row of $\Omega_{ji}$). The estimate of $\hat{elpd}$ is considered reliable (quick convergence) for $\hat{k} < 0.5$, performance may still be reliable for values of $\hat{k}$ up to 0.7. Values of $\hat{k} > 0.7$ suggest that the data points are highly influential to the estimated posterior and potentially introducing bias. 
+
+## Impact of Highland LAD on CDE model
+
+The highland LAD fails PSIS diagnostic checks with a value of $\hat{k}>0.7$ (although the effect is smaller than for the next (frequency) OD matrix).
+
+```{r diagnose,echo=FALSE,warning=FALSE}
+source('PPDfuncs.R')
+load('./CDE/subnational/S_CDETotal_all.RData')
+load('../flux/scotland/S_mobility_flux_furthest.RData')
+
+plot(loo_S_CDET_all)
+
+post_compare <- fit_S_CDET_all %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Total (S)',country='S',data='Scotland (32 LADS)')
+post_compare <- post_compare %>% bind_rows(fit_S_CDET %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Total (S)',country='S',data='Scotland (31 LADS)'))
+
+post_compare <- post_compare %>% ungroup() %>% mutate(.variable = factor(.variable,levels=c('tau','rho','delta','phi')))
+
+cred95 <- function(x){return(data.frame(y=median(x),ymin=quantile(x,c(0.025)),ymax=quantile(x,0.975)))}
+
+ggplot(post_compare,aes(x=data,y=.value)) + coord_flip() + stat_summary(fun.data=cred95,size=0.5, position = position_dodge(width=0.5)) + facet_wrap(~.variable,scales='free_x',labeller = label_parsed) + xlab('') + ylab('') + theme(legend.position = "none")
+
+
+```
+
+Comparison of a model fitted to the full 32 Scottish LADS to a reduced data set with Highlands removed (31 LADS) illustrates the systematic bias introduced on the distance scaling ($\rho$ parameter). Although posterior distributions are overlapping we consider the size of the effect large enough to motivate removing the highland LAD from inference and for the purposes of model comparison.
+
+```{r psis_bbc,echo=FALSE, message=FALSE, fig.path='Figs/'}
+
+psis_compareT <- tibble(data='BBC Total (CDP)',lad_id=1:length(pareto_k_values(loo_CDPT)),
+                                                   pk=pareto_k_values(loo_CDPT))
+psis_compareT <- psis_compareT %>% bind_rows(tibble(data='BBC Total (CDE)',
+                                                  lad_id=1:length(pareto_k_values(loo_CDET)),
+                                                  pk=pareto_k_values(loo_CDET)))
+psis_compareT <- psis_compareT %>% bind_rows(tibble(data='BBC Total (CDO)',
+                                                  lad_id=1:length(pareto_k_values(loo_CDOT)),
+                                                  pk=pareto_k_values(loo_CDOT)))
+psis_compareT <- psis_compareT %>% bind_rows(tibble(data='BBC Total (Sto)',
+                                                  lad_id=1:length(pareto_k_values(loo_StoT)),
+                                                  pk=pareto_k_values(loo_StoT)))
+psis_compareT <- psis_compareT %>% bind_rows(tibble(data='BBC Total (IO)',
+                                                  lad_id=1:length(pareto_k_values(loo_IOT)),
+                                                  pk=pareto_k_values(loo_IOT)))
+psis_compareT <- psis_compareT %>% bind_rows(tibble(data='BBC Total (Imp)',
+                                                  lad_id=1:length(pareto_k_values(loo_ImpT)),
+                                                  pk=pareto_k_values(loo_ImpT)))
+psis_compareT <- psis_compareT %>% bind_rows(tibble(data='BBC Total (ERad)',
+                                                  lad_id=1:length(pareto_k_values(loo_ERadT)),
+                                                  pk=pareto_k_values(loo_ERadT)))
+
+ggplot(psis_compareT,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+psis_compareU <- tibble(data='BBC Under 18 (CDP)',lad_id=1:length(pareto_k_values(loo_CDPU)),
+                                                   pk=pareto_k_values(loo_CDPU))
+psis_compareU <- psis_compareU %>% bind_rows(tibble(data='BBC Under 18 (CDE)',
+                                                  lad_id=1:length(pareto_k_values(loo_CDEU)),
+                                                  pk=pareto_k_values(loo_CDEU)))
+psis_compareU <- psis_compareU %>% bind_rows(tibble(data='BBC Under 18 (CDO)',
+                                                  lad_id=1:length(pareto_k_values(loo_CDOU)),
+                                                  pk=pareto_k_values(loo_CDOU)))
+psis_compareU <- psis_compareU %>% bind_rows(tibble(data='BBC Under 18 (Sto)',
+                                                  lad_id=1:length(pareto_k_values(loo_StoU)),
+                                                  pk=pareto_k_values(loo_StoU)))
+psis_compareU <- psis_compareU %>% bind_rows(tibble(data='BBC Under 18 (IO)',
+                                                  lad_id=1:length(pareto_k_values(loo_IOU)),
+                                                  pk=pareto_k_values(loo_IOU)))
+psis_compareU <- psis_compareU %>% bind_rows(tibble(data='BBC Under 18 (Imp)',
+                                                  lad_id=1:length(pareto_k_values(loo_ImpU)),
+                                                  pk=pareto_k_values(loo_ImpU)))
+psis_compareU <- psis_compareU %>% bind_rows(tibble(data='BBC Under 18 (ERad)',
+                                                  lad_id=1:length(pareto_k_values(loo_ERadU)),
+                                                  pk=pareto_k_values(loo_ERadU)))
+
+ggplot(psis_compareU,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+psis_compareEd <- tibble(data='BBC Education (CDP)',lad_id=1:length(pareto_k_values(loo_CDPEd)),
+                                                   pk=pareto_k_values(loo_CDPEd))
+psis_compareEd <- psis_compareEd %>% bind_rows(tibble(data='BBC Education (CDE)',
+                                                  lad_id=1:length(pareto_k_values(loo_CDEEd)),
+                                                  pk=pareto_k_values(loo_CDEEd)))
+psis_compareEd <- psis_compareEd %>% bind_rows(tibble(data='BBC Education (CDO)',
+                                                  lad_id=1:length(pareto_k_values(loo_CDOEd)),
+                                                  pk=pareto_k_values(loo_CDOEd)))
+psis_compareEd <- psis_compareEd %>% bind_rows(tibble(data='BBC Education (Sto)',
+                                                  lad_id=1:length(pareto_k_values(loo_StoEd)),
+                                                  pk=pareto_k_values(loo_StoEd)))
+psis_compareEd <- psis_compareEd %>% bind_rows(tibble(data='BBC Education (IO)',
+                                                  lad_id=1:length(pareto_k_values(loo_IOEd)),
+                                                  pk=pareto_k_values(loo_IOEd)))
+psis_compareEd <- psis_compareEd %>% bind_rows(tibble(data='BBC Education (Imp)',
+                                                  lad_id=1:length(pareto_k_values(loo_ImpEd)),
+                                                  pk=pareto_k_values(loo_ImpEd)))
+psis_compareEd <- psis_compareEd %>% bind_rows(tibble(data='BBC Education (ERad)',
+                                                  lad_id=1:length(pareto_k_values(loo_ERadEd)),
+                                                  pk=pareto_k_values(loo_ERadEd)))
+
+ggplot(psis_compareEd,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+psis_compareEm <- tibble(data='BBC Employed (CDP)',lad_id=1:length(pareto_k_values(loo_CDPEm)),
+                                                   pk=pareto_k_values(loo_CDPEm))
+psis_compareEm <- psis_compareEm %>% bind_rows(tibble(data='BBC Employed  (CDE)',
+                                                  lad_id=1:length(pareto_k_values(loo_CDEEm)),
+                                                  pk=pareto_k_values(loo_CDEEm)))
+psis_compareEm <- psis_compareEm %>% bind_rows(tibble(data='BBC Employed  (CDO)',
+                                                  lad_id=1:length(pareto_k_values(loo_CDOEm)),
+                                                  pk=pareto_k_values(loo_CDOEm)))
+psis_compareEm <- psis_compareEm %>% bind_rows(tibble(data='BBC Employed  (Sto)',
+                                                  lad_id=1:length(pareto_k_values(loo_StoEm)),
+                                                  pk=pareto_k_values(loo_StoEm)))
+psis_compareEm <- psis_compareEm %>% bind_rows(tibble(data='BBC Employed  (IO)',
+                                                  lad_id=1:length(pareto_k_values(loo_IOEm)),
+                                                  pk=pareto_k_values(loo_IOEm)))
+psis_compareEm <- psis_compareEm %>% bind_rows(tibble(data='BBC Employed  (Imp)',
+                                                  lad_id=1:length(pareto_k_values(loo_ImpEm)),
+                                                  pk=pareto_k_values(loo_ImpEm)))
+psis_compareEm <- psis_compareEm %>% bind_rows(tibble(data='BBC Employed  (ERad)',
+                                                  lad_id=1:length(pareto_k_values(loo_ERadEm)),
+                                                  pk=pareto_k_values(loo_ERadEm)))
+
+ggplot(psis_compareEm,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+psis_compareN <- tibble(data='BBC NEET (CDP)',lad_id=1:length(pareto_k_values(loo_CDPN)),
+                                                   pk=pareto_k_values(loo_CDPN))
+psis_compareN <- psis_compareN %>% bind_rows(tibble(data='BBC  NEET  (CDE)',
+                                                  lad_id=1:length(pareto_k_values(loo_CDEN)),
+                                                  pk=pareto_k_values(loo_CDEN)))
+psis_compareN <- psis_compareN %>% bind_rows(tibble(data='BBC  NEET  (CDO)',
+                                                  lad_id=1:length(pareto_k_values(loo_CDON)),
+                                                  pk=pareto_k_values(loo_CDON)))
+psis_compareN <- psis_compareN %>% bind_rows(tibble(data='BBC  NEET  (Sto)',
+                                                  lad_id=1:length(pareto_k_values(loo_StoN)),
+                                                  pk=pareto_k_values(loo_StoN)))
+psis_compareN <- psis_compareN %>% bind_rows(tibble(data='BBC  NEET  (IO)',
+                                                  lad_id=1:length(pareto_k_values(loo_ION)),
+                                                  pk=pareto_k_values(loo_ION)))
+psis_compareN <- psis_compareN %>% bind_rows(tibble(data='BBC  NEET  (Imp)',
+                                                  lad_id=1:length(pareto_k_values(loo_ImpN)),
+                                                  pk=pareto_k_values(loo_ImpN)))
+psis_compareN <- psis_compareN %>% bind_rows(tibble(data='BBC  NEET  (ERad)',
+                                                  lad_id=1:length(pareto_k_values(loo_ERadN)),
+                                                  pk=pareto_k_values(loo_ERadN)))
+
+ggplot(psis_compareN,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+
+
+```
+
+```{r psis_bbc_age,echo=FALSE, message=FALSE, fig.path='Figs/'}
+psis_compareU <- tibble(data='BBC Under 18 (CDP)',lad_id=1:length(pareto_k_values(loo_CDPU)),
+                                                   pk=pareto_k_values(loo_CDPU))
+psis_compareU <- psis_compareU %>% bind_rows(tibble(data='BBC Under 18 (CDE)',
+                                                  lad_id=1:length(pareto_k_values(loo_CDEU)),
+                                                  pk=pareto_k_values(loo_CDEU)))
+psis_compareU <- psis_compareU %>% bind_rows(tibble(data='BBC Under 18 (CDO)',
+                                                  lad_id=1:length(pareto_k_values(loo_CDOU)),
+                                                  pk=pareto_k_values(loo_CDOU)))
+psis_compareU <- psis_compareU %>% bind_rows(tibble(data='BBC Under 18 (Sto)',
+                                                  lad_id=1:length(pareto_k_values(loo_StoU)),
+                                                  pk=pareto_k_values(loo_StoU)))
+psis_compareU <- psis_compareU %>% bind_rows(tibble(data='BBC Under 18 (IO)',
+                                                  lad_id=1:length(pareto_k_values(loo_IOU)),
+                                                  pk=pareto_k_values(loo_IOU)))
+psis_compareU <- psis_compareU %>% bind_rows(tibble(data='BBC Under 18 (Imp)',
+                                                  lad_id=1:length(pareto_k_values(loo_ImpU)),
+                                                  pk=pareto_k_values(loo_ImpU)))
+psis_compareU <- psis_compareU %>% bind_rows(tibble(data='BBC Under 18 (ERad)',
+                                                  lad_id=1:length(pareto_k_values(loo_ERadU)),
+                                                  pk=pareto_k_values(loo_ERadU)))
+
+ggplot(psis_compareU,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+psis_compare18_30 <- tibble(data='BBC 18-30 (CDP)',lad_id=1:length(pareto_k_values(loo_CDP18_30)),
+                                                   pk=pareto_k_values(loo_CDP18_30))
+psis_compare18_30 <- psis_compare18_30 %>% bind_rows(tibble(data='BBC 18-30 (CDE)',
+                                                  lad_id=1:length(pareto_k_values(loo_CDE18_30)),
+                                                  pk=pareto_k_values(loo_CDE18_30)))
+psis_compare18_30 <- psis_compare18_30 %>% bind_rows(tibble(data='BBC 18-30 (CDO)',
+                                                  lad_id=1:length(pareto_k_values(loo_CDO18_30)),
+                                                  pk=pareto_k_values(loo_CDO18_30)))
+psis_compare18_30 <- psis_compare18_30 %>% bind_rows(tibble(data='BBC 18-30 (Sto)',
+                                                  lad_id=1:length(pareto_k_values(loo_Sto18_30)),
+                                                  pk=pareto_k_values(loo_Sto18_30)))
+psis_compare18_30 <- psis_compare18_30 %>% bind_rows(tibble(data='BBC 18-30 (IO)',
+                                                  lad_id=1:length(pareto_k_values(loo_IO18_30)),
+                                                  pk=pareto_k_values(loo_IO18_30)))
+psis_compare18_30 <- psis_compare18_30 %>% bind_rows(tibble(data='BBC 18-30 (Imp)',
+                                                  lad_id=1:length(pareto_k_values(loo_Imp18_30)),
+                                                  pk=pareto_k_values(loo_Imp18_30)))
+psis_compare18_30 <- psis_compare18_30 %>% bind_rows(tibble(data='BBC 18-30 (ERad)',
+                                                  lad_id=1:length(pareto_k_values(loo_ERad18_30)),
+                                                  pk=pareto_k_values(loo_ERad18_30)))
+
+ggplot(psis_compare18_30,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+psis_compare30_60 <- tibble(data='BBC 30-60 (CDP)',lad_id=1:length(pareto_k_values(loo_CDP30_60)),
+                                                   pk=pareto_k_values(loo_CDP30_60))
+psis_compare30_60 <- psis_compare30_60 %>% bind_rows(tibble(data='BBC 30-60 (CDE)',
+                                                  lad_id=1:length(pareto_k_values(loo_CDE30_60)),
+                                                  pk=pareto_k_values(loo_CDE30_60)))
+psis_compare30_60 <- psis_compare30_60 %>% bind_rows(tibble(data='BBC 30-60 (CDO)',
+                                                  lad_id=1:length(pareto_k_values(loo_CDO30_60)),
+                                                  pk=pareto_k_values(loo_CDO30_60)))
+psis_compare30_60 <- psis_compare30_60 %>% bind_rows(tibble(data='BBC 30-60 (Sto)',
+                                                  lad_id=1:length(pareto_k_values(loo_Sto30_60)),
+                                                  pk=pareto_k_values(loo_Sto30_60)))
+psis_compare30_60 <- psis_compare30_60 %>% bind_rows(tibble(data='BBC 30-60 (IO)',
+                                                  lad_id=1:length(pareto_k_values(loo_IO30_60)),
+                                                  pk=pareto_k_values(loo_IO30_60)))
+psis_compare30_60 <- psis_compare30_60 %>% bind_rows(tibble(data='BBC 30-60 (Imp)',
+                                                  lad_id=1:length(pareto_k_values(loo_Imp30_60)),
+                                                  pk=pareto_k_values(loo_Imp30_60)))
+psis_compare30_60 <- psis_compare30_60 %>% bind_rows(tibble(data='BBC 30-60 (ERad)',
+                                                  lad_id=1:length(pareto_k_values(loo_ERad30_60)),
+                                                  pk=pareto_k_values(loo_ERad30_60)))
+
+ggplot(psis_compare30_60,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+psis_compare60_100 <- tibble(data='BBC 60-100 (CDP)',lad_id=1:length(pareto_k_values(loo_CDP60_100)),
+                                                   pk=pareto_k_values(loo_CDP60_100))
+psis_compare60_100 <- psis_compare60_100 %>% bind_rows(tibble(data='BBC 60-100 (CDE)',
+                                                  lad_id=1:length(pareto_k_values(loo_CDE60_100)),
+                                                  pk=pareto_k_values(loo_CDE60_100)))
+psis_compare60_100 <- psis_compare60_100 %>% bind_rows(tibble(data='BBC 60-100 (CDO)',
+                                                  lad_id=1:length(pareto_k_values(loo_CDO60_100)),
+                                                  pk=pareto_k_values(loo_CDO60_100)))
+psis_compare60_100 <- psis_compare60_100 %>% bind_rows(tibble(data='BBC 60-100 (Sto)',
+                                                  lad_id=1:length(pareto_k_values(loo_Sto60_100)),
+                                                  pk=pareto_k_values(loo_Sto60_100)))
+psis_compare60_100 <- psis_compare60_100 %>% bind_rows(tibble(data='BBC 60-100 (IO)',
+                                                  lad_id=1:length(pareto_k_values(loo_IO60_100)),
+                                                  pk=pareto_k_values(loo_IO60_100)))
+psis_compare60_100 <- psis_compare60_100 %>% bind_rows(tibble(data='BBC 60-100 (Imp)',
+                                                  lad_id=1:length(pareto_k_values(loo_Imp60_100)),
+                                                  pk=pareto_k_values(loo_Imp60_100)))
+psis_compare60_100 <- psis_compare60_100 %>% bind_rows(tibble(data='BBC 60-100 (ERad)',
+                                                  lad_id=1:length(pareto_k_values(loo_ERad60_100)),
+                                                  pk=pareto_k_values(loo_ERad60_100)))
+
+ggplot(psis_compare60_100,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+
+```
+
+## Model comparison
+
+The difference between $\hat{elpd}$ for alternative models fitted to the same data provides a measure of their relative predictive accuracy. 
+
+```{r compare_models,echo=FALSE, message=FALSE}
+
+lookup=array(c('CDE','CDP','CDO','ERad','IO','Imp','Stoufer'))
+
+row.names(lookup)<- c('model1','model2','model3','model4','model5','model6','model7')
+
+
+temp = loo_compare(loo_CDE_CE,loo_CDP_CE,loo_CDO_CE,loo_ERad_CE,loo_IO_CE,loo_Imp_CE,loo_Stoufer_CE)
+looC_df <- data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep=''))
+
+temp = loo_compare(loo_CDE_CW,loo_CDP_CW,loo_CDO_CW,loo_ERad_CW,loo_IO_CW,loo_Imp_CW,loo_Stoufer_CW)
+
+looC_df <- cbind(looC_df,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
+
+temp = loo_compare(loo_CDE_CS,loo_CDP_CS,loo_CDO_CS,loo_ERad_CS,loo_IO_CS,loo_Imp_CS,loo_Stoufer_CS)
+
+looC_df <- cbind(looC_df,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
+
+temp = loo_compare(loo_CDE_CNI,loo_CDP_CNI,loo_CDO_CNI,loo_ERad_CNI,loo_IO_CNI,loo_Imp_CNI,loo_Stoufer_CNI)
+
+looC_df <- cbind(looC_df,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
+
+print(looC_df)
+print.xtable(looC_df,file = './textables/looCensus.tex')
+
+lookup=array(c('CDE','CDP','CDO','ERad','Stoufer','IO','Imp'))
+row.names(lookup)<- c('model1','model2','model3','model4','model5','model6','model7')
+
+
+temp = loo_compare(loo_E_CDPT,loo_E_CDET,loo_E_CDOT,loo_E_ERadT,loo_E_StoT,loo_E_IOT,loo_E_ImpT)
+
+looBBCT_df <- data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep=''))
+
+temp = loo_compare(loo_W_CDPT,loo_W_CDET,loo_W_CDOT,loo_W_ERadT,loo_W_StoT,loo_W_IOT,loo_W_ImpT)
+
+looBBCT_df <- cbind(looBBCT_df,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
+
+temp = loo_compare(loo_S_CDPT,loo_S_CDET,loo_S_CDOT,loo_S_ERadT,loo_S_StoT,loo_S_IOT,loo_S_ImpT)
+
+looBBCT_df <- cbind(looBBCT_df,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
+
+temp = loo_compare(loo_NI_CDPT,loo_NI_CDET,loo_NI_CDOT,loo_NI_ERadT,loo_NI_StoT,loo_NI_IOT,loo_NI_ImpT)
+
+looBBCT_df <- cbind(looBBCT_df,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
+
+print(looBBCT_df)
+print.xtable(looBBCT_df,file = './textables/looBBCsubnational.tex')
+
+temp = loo_compare(loo_CDPT,loo_CDET,loo_CDOT,loo_ERadT,loo_StoT,loo_IOT,loo_ImpT)
+
+looBBCUK_df <- data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep=''))
+
+temp = loo_compare(loo_CDPU,loo_CDEU,loo_CDOU,loo_ERadU,loo_StoU,loo_IOU,loo_ImpU)
+
+looBBCUK_df <- cbind(looBBCUK_df,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
+
+temp = loo_compare(loo_CDPEd,loo_CDEEd,loo_CDOEd,loo_ERadEd,loo_StoEd,loo_IOEd,loo_ImpEd)
+
+looBBCUK_df <- cbind(looBBCUK_df,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
+
+
+temp = loo_compare(loo_CDPEm,loo_CDEEm,loo_CDOEm,loo_ERadEm,loo_StoEm,loo_IOEm,loo_ImpEm)
+
+looBBCUK_df <- cbind(looBBCUK_df,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
+
+
+temp = loo_compare(loo_CDPN,loo_CDEN,loo_CDON,loo_ERadN,loo_StoN,loo_ION,loo_ImpN)
+
+looBBCUK_df <- cbind(looBBCUK_df,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
+
+print(looBBCUK_df)
+print.xtable(looBBCUK_df,file = './textables/looBBCgroups.tex')
+
+
+temp = loo_compare(loo_CDPU,loo_CDEU,loo_CDOU,loo_ERadU,loo_StoU,loo_IOU,loo_ImpU)
+
+looBBCage_df <- data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep=''))
+
+temp = loo_compare(loo_CDP18_30,loo_CDE18_30,loo_CDO18_30,loo_ERad18_30,loo_Sto18_30,loo_IO18_30,loo_Imp18_30)
+
+looBBCage_df <- cbind(looBBCage_df,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
+
+temp = loo_compare(loo_CDP30_60,loo_CDE30_60,loo_CDO30_60,loo_ERad30_60,loo_Sto30_60,loo_IO30_60,loo_Imp30_60)
+
+looBBCage_df <- cbind(looBBCage_df,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
+
+temp = loo_compare(loo_CDP60_100,loo_CDE60_100,loo_CDO60_100,loo_ERad60_100,loo_Sto60_100,loo_IO60_100,loo_Imp60_100)
+
+looBBCage_df <- cbind(looBBCage_df,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
+
+print(looBBCage_df)
+print.xtable(looBBCage_df,file = './textables/looBBCage.tex')
+
+```
+
+# Posterior Estimates (Favoured model - CDO)
+
+The CDO model (Competing destinations with offset) is favoured for each data set except the census commuting workflow data within England for which the Extended Radiation model is favoured. For comparison between data sets we use the CDO model.
+
+```{r cdostimates, echo=FALSE, fig.height=5*0.75, fig.path='Figs/', fig.width=5, message=FALSE}
+post_compare <- fitCDO_CE %>% gather_draws(tau,rho,delta,alpha,phi) %>% mutate(data='Census (E)',country='E')
+post_compare <- post_compare %>% bind_rows(fitCDO_CW %>% gather_draws(tau,rho,delta,alpha,phi) %>% mutate(data='Census (W)',country='W'))
+post_compare <- post_compare %>% bind_rows(fitCDO_CS %>% gather_draws(tau,rho,delta,alpha,phi) %>% mutate(data='Census (S)',country='S'))
+post_compare <- post_compare %>% bind_rows(fitCDO_CNI %>% gather_draws(tau,rho,delta,alpha,phi) %>% mutate(data='Census (NI)',country='NI'))
+
+post_compare <- post_compare %>% bind_rows(fit_E_CDOT %>% gather_draws(tau,rho,delta,alpha,phi) %>% mutate(data='BBC Total (E)',country='E'))
+post_compare <- post_compare %>% bind_rows(fit_NI_CDOT %>% gather_draws(tau,rho,delta,alpha,phi) %>% mutate(data='BBC Total (NI)',country='NI'))
+post_compare <- post_compare %>% bind_rows(fit_W_CDOT %>% gather_draws(tau,rho,delta,alpha,phi) %>% mutate(data='BBC Total (W)',country='W'))
+post_compare <- post_compare %>% bind_rows(fit_S_CDOT %>% gather_draws(tau,rho,delta,alpha,phi) %>% mutate(data='BBC Total (S)',country='S'))
+post_compare <- post_compare %>% bind_rows(fitCDOT %>% gather_draws(tau,rho,delta,alpha,phi) %>% mutate(data='BBC Total (UK)',country='UK'))
+
+post_compare <- post_compare %>% ungroup() %>% mutate(.variable = factor(.variable,levels=c('tau','rho','alpha','delta','phi')))
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=rev(c('BBC Total (UK)','Census (E)', 'BBC Total (E)', 'Census (S)','BBC Total (S)','Census (W)', 'BBC Total (W)','Census (NI)','BBC Total (NI)'))))
+
+cred95 <- function(x){return(data.frame(y=median(x),ymin=quantile(x,c(0.025)),ymax=quantile(x,0.975)))}
+
+ggplot(post_compare %>% filter(.variable!='phi'),aes(x=data,y=.value,col=country)) + coord_flip() + stat_summary(fun.data=cred95,size=0.5) + facet_wrap(~.variable,scales='free_x',labeller=label_parsed) + xlab('') + ylab('') + theme(legend.position = "none") 
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (UK)','Census (E)', 'BBC Total (E)', 'Census (S)','BBC Total (S)','Census (W)', 'BBC Total (W)','Census (NI)','BBC Total (NI)'))))
+
+
+summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
+
+print.xtable(summary_df,file = './textables/CDOsubnational.tex')
+
+post_compare <- fitCDOT %>% gather_draws(tau,rho,delta,alpha,phi) %>% mutate(data='BBC Total (UK)',clevel='Ref')
+post_compare <- post_compare %>% bind_rows(fitCDOU %>% gather_draws(tau,rho,delta,alpha,phi) %>% mutate(data='BBC Under 18 (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitCDOEd %>% gather_draws(tau,rho,delta,alpha,phi) %>% mutate(data='BBC Education (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitCDOEm %>% gather_draws(tau,rho,delta,alpha,phi) %>% mutate(data='BBC Employed (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitCDON %>% gather_draws(tau,rho,delta,alpha,phi) %>% mutate(data='BBC NEET (UK)',clevel='Cmp'))
+
+post_compare <- post_compare %>% bind_rows(fitCDO18_30 %>% gather_draws(tau,rho,delta,alpha,phi) %>% mutate(data='BBC 18-30 (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitCDO30_60 %>% gather_draws(tau,rho,delta,alpha,phi) %>% mutate(data='BBC 30-60 (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitCDO60_100 %>% gather_draws(tau,rho,delta,alpha,phi) %>% mutate(data='BBC 60-100 (UK)',clevel='Cmp'))
+
+
+post_compare <- post_compare %>% ungroup() %>% mutate(.variable = factor(.variable,levels=c('tau','rho','alpha','delta','phi')))
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=rev(c('BBC Total (UK)','BBC Under 18 (UK)', 'BBC Education (UK)','BBC 18-30 (UK)', 'BBC Employed (UK)','BBC 30-60 (UK)','BBC NEET (UK)','BBC 60-100 (UK)'))))
+
+ggplot(post_compare %>% filter(.variable!='phi'),aes(x=data,y=.value,col=clevel)) + coord_flip() + stat_summary(fun.data=cred95,size=0.5) + facet_wrap(~.variable,scales='free_x',labeller=label_parsed) + xlab('') + ylab('') + theme(legend.position = "none") 
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (UK)','BBC Under 18 (UK)', 'BBC Education (UK)','BBC 18-30 (UK)', 'BBC Employed (UK)','BBC 30-60 (UK)','BBC NEET (UK)','BBC 60-100 (UK)'))))
+
+summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
+
+
+print.xtable(summary_df,file = './textables/CDOBBC.tex')
+
+```
+
+## Posterior Estimates (CDE)
+
+```{r cdeestimates, echo=FALSE,message=FALSE, fig.path='Figs/',fig.width=5, fig.height=5*0.75}
+post_compare <- fitCDE_CE %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='Census (E)',country='E')
+post_compare <- post_compare %>% bind_rows(fitCDE_CW %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='Census (W)',country='W'))
+post_compare <- post_compare %>% bind_rows(fitCDE_CS %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='Census (S)',country='S'))
+post_compare <- post_compare %>% bind_rows(fitCDE_CNI %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='Census (NI)',country='NI'))
+
+post_compare <- post_compare %>% bind_rows(fit_E_CDET %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Total (E)',country='E'))
+post_compare <- post_compare %>% bind_rows(fit_NI_CDET %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Total (NI)',country='NI'))
+post_compare <- post_compare %>% bind_rows(fit_W_CDET %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Total (W)',country='W'))
+post_compare <- post_compare %>% bind_rows(fit_S_CDET %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Total (S)',country='S'))
+post_compare <- post_compare %>% bind_rows(fitCDET %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Total (UK)',country='UK'))
+
+post_compare <- post_compare %>% ungroup() %>% mutate(.variable = factor(.variable,levels=c('tau','rho','delta','phi')))
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=rev(c('BBC Total (UK)','Census (E)', 'BBC Total (E)', 'Census (S)','BBC Total (S)','Census (W)', 'BBC Total (W)','Census (NI)','BBC Total (NI)'))))
+
+cred95 <- function(x){return(data.frame(y=median(x),ymin=quantile(x,c(0.025)),ymax=quantile(x,0.975)))}
+
+ggplot(post_compare,aes(x=data,y=.value,col=country)) + coord_flip() + stat_summary(fun.data=cred95,size=0.5) + facet_wrap(~.variable,scales='free_x',labeller=label_parsed) + xlab('') + ylab('') + theme(legend.position = "none") 
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (UK)','Census (E)', 'BBC Total (E)', 'Census (S)','BBC Total (S)','Census (W)', 'BBC Total (W)','Census (NI)','BBC Total (NI)'))))
+
+
+summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
+
+print.xtable(summary_df,file = './textables/CDEsubnational.tex')
+
+post_compare <- fitCDET %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Total (UK)',clevel='Ref')
+post_compare <- post_compare %>% bind_rows(fitCDEU %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Under 18 (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitCDEEd %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Education (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitCDEEm %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Employed (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitCDEN %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC NEET (UK)',clevel='Cmp'))
+
+post_compare <- post_compare %>% bind_rows(fitCDE18_30 %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC 18-30 (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitCDE30_60 %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC 30-60 (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitCDE60_100 %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC 60-100 (UK)',clevel='Cmp'))
+
+
+post_compare <- post_compare %>% ungroup() %>% mutate(.variable = factor(.variable,levels=c('tau','rho','delta','phi')))
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=rev(c('BBC Total (UK)','BBC Under 18 (UK)', 'BBC Education (UK)','BBC 18-30 (UK)', 'BBC Employed (UK)','BBC 30-60 (UK)','BBC NEET (UK)','BBC 60-100 (UK)'))))
+
+ggplot(post_compare,aes(x=data,y=.value,col=clevel)) + coord_flip() + stat_summary(fun.data=cred95,size=0.5) + facet_wrap(~.variable,scales='free_x',labeller=label_parsed) + xlab('') + ylab('') + theme(legend.position = "none") 
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (UK)','BBC Under 18 (UK)', 'BBC Education (UK)','BBC 18-30 (UK)', 'BBC Employed (UK)','BBC 30-60 (UK)','BBC NEET (UK)','BBC 60-100 (UK)'))))
+
+summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
+
+print.xtable(summary_df,file = './textables/CDEBBC.tex')
+
+```
+
+## Posterior Estimates (CDP)
+
+```{r cdpestimates, echo=FALSE,message=FALSE, fig.path='Figs/',fig.width=5, fig.height=5*0.75}
+post_compare <- fitCDP_CE %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='Census (E)',country='E')
+post_compare <- post_compare %>% bind_rows(fitCDP_CW %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='Census (W)',country='W'))
+post_compare <- post_compare %>% bind_rows(fitCDP_CS %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='Census (S)',country='S'))
+post_compare <- post_compare %>% bind_rows(fitCDP_CNI %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='Census (NI)',country='NI'))
+
+post_compare <- post_compare %>% bind_rows(fit_E_CDPT %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Total (E)',country='E'))
+post_compare <- post_compare %>% bind_rows(fit_NI_CDPT %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Total (NI)',country='NI'))
+post_compare <- post_compare %>% bind_rows(fit_W_CDPT %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Total (W)',country='W'))
+post_compare <- post_compare %>% bind_rows(fit_S_CDPT %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Total (S)',country='S'))
+post_compare <- post_compare %>% bind_rows(fitCDPT %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Total (UK)',country='UK'))
+
+post_compare <- post_compare %>% ungroup() %>% mutate(.variable = factor(.variable,levels=c('tau','rho','delta','phi')))
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=rev(c('BBC Total (UK)','Census (E)', 'BBC Total (E)', 'Census (S)','BBC Total (S)','Census (W)', 'BBC Total (W)','Census (NI)','BBC Total (NI)'))))
+
+cred95 <- function(x){return(data.frame(y=median(x),ymin=quantile(x,c(0.025)),ymax=quantile(x,0.975)))}
+
+ggplot(post_compare,aes(x=data,y=.value,col=country)) + coord_flip() + stat_summary(fun.data=cred95,size=0.5) + facet_wrap(~.variable,scales='free_x',labeller=label_parsed) + xlab('') + ylab('') + theme(legend.position = "none") 
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (UK)','Census (E)', 'BBC Total (E)', 'Census (S)','BBC Total (S)','Census (W)', 'BBC Total (W)','Census (NI)','BBC Total (NI)'))))
+
+summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
+
+print.xtable(summary_df,file = './textables/CDPsubnational.tex')
+
+post_compare <- fitCDPT %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Total (UK)',clevel='Ref')
+post_compare <- post_compare %>% bind_rows(fitCDPU %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Under 18 (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitCDPEd %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Education (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitCDPEm %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Employed (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitCDPN %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC NEET (UK)',clevel='Cmp'))
+
+post_compare <- post_compare %>% bind_rows(fitCDP18_30 %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC 18-30 (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitCDP30_60 %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC 30-60 (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitCDP60_100 %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC 60-100 (UK)',clevel='Cmp'))
+
+post_compare <- post_compare %>% ungroup() %>% mutate(.variable = factor(.variable,levels=c('tau','rho','delta','phi')))
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=rev(c('BBC Total (UK)','BBC Under 18 (UK)', 'BBC Education (UK)','BBC 18-30 (UK)', 'BBC Employed (UK)','BBC 30-60 (UK)','BBC NEET (UK)','BBC 60-100 (UK)'))))
+
+
+ggplot(post_compare,aes(x=data,y=.value,col=clevel)) + coord_flip() + stat_summary(fun.data=cred95,size=0.75) + facet_wrap(~.variable,scales='free_x',labeller=label_parsed) + xlab('') + ylab('') + theme(legend.position = "none") 
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (UK)','BBC Under 18 (UK)', 'BBC Education (UK)','BBC 18-30 (UK)', 'BBC Employed (UK)','BBC 30-60 (UK)','BBC NEET (UK)','BBC 60-100 (UK)'))))
+
+summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
+
+print.xtable(summary_df,file = './textables/CDPBBC.tex')
+
+```
+
+## Posterior Estimates (ERad)
+
+```{r erestimates, echo=FALSE,message=FALSE, fig.path='Figs/',fig.width=5, fig.height=5/2.5}
+post_compare <- fitERad_CE %>% gather_draws(alpha,phi) %>% mutate(data='Census (E)',country='E')
+post_compare <- post_compare %>% bind_rows(fitERad_CW %>% gather_draws(alpha,phi) %>% mutate(data='Census (W)',country='W'))
+post_compare <- post_compare %>% bind_rows(fitERad_CS %>% gather_draws(alpha,phi) %>% mutate(data='Census (S)',country='S'))
+post_compare <- post_compare %>% bind_rows(fitERad_CNI %>% gather_draws(alpha,phi) %>% mutate(data='Census (NI)',country='NI'))
+
+post_compare <- post_compare %>% bind_rows(fit_E_ERadT %>% gather_draws(alpha,phi) %>% mutate(data='BBC Total (E)',country='E'))
+post_compare <- post_compare %>% bind_rows(fit_NI_ERadT %>% gather_draws(alpha,phi) %>% mutate(data='BBC Total (NI)',country='NI'))
+post_compare <- post_compare %>% bind_rows(fit_W_ERadT %>% gather_draws(alpha,phi) %>% mutate(data='BBC Total (W)',country='W'))
+post_compare <- post_compare %>% bind_rows(fit_S_ERadT %>% gather_draws(alpha,phi) %>% mutate(data='BBC Total (S)',country='S'))
+post_compare <- post_compare %>% bind_rows(fitERadT %>% gather_draws(alpha,phi) %>% mutate(data='BBC Total (UK)',country='UK'))
+
+post_compare <- post_compare %>% ungroup() %>% mutate(.variable = factor(.variable,levels=c('alpha','phi')))
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=rev(c('BBC Total (UK)','Census (E)', 'BBC Total (E)', 'Census (S)','BBC Total (S)','Census (W)', 'BBC Total (W)','Census (NI)','BBC Total (NI)'))))
+
+cred95 <- function(x){return(data.frame(y=median(x),ymin=quantile(x,c(0.025)),ymax=quantile(x,0.975)))}
+
+ggplot(post_compare,aes(x=data,y=.value,col=country)) + coord_flip() + stat_summary(fun.data=cred95,size=0.5) + facet_wrap(~.variable,scales='free_x',labeller=label_parsed) + xlab('') + ylab('') + theme(legend.position = "none") 
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (UK)','Census (E)', 'BBC Total (E)', 'Census (S)','BBC Total (S)','Census (W)', 'BBC Total (W)','Census (NI)','BBC Total (NI)'))))
+
+
+
+summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
+
+print.xtable(summary_df,file = './textables/ERadsubnational.tex')
+
+post_compare <- fitERadT %>% gather_draws(alpha,phi) %>% mutate(data='BBC Total (UK)',clevel='Ref')
+post_compare <- post_compare %>% bind_rows(fitERadU %>% gather_draws(alpha,phi) %>% mutate(data='BBC Under 18 (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitERadEd %>% gather_draws(alpha,phi) %>% mutate(data='BBC Education (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitERadEm %>% gather_draws(alpha,phi) %>% mutate(data='BBC Employed (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitERadN %>% gather_draws(alpha,phi) %>% mutate(data='BBC NEET (UK)',clevel='Cmp'))
+
+post_compare <- post_compare %>% bind_rows(fitERad18_30 %>% gather_draws(alpha,phi) %>% mutate(data='BBC 18-30 (UK)',clevel='Cmp'))
+
+post_compare <- post_compare %>% bind_rows(fitERad30_60 %>% gather_draws(alpha,phi) %>% mutate(data='BBC 30-60 (UK)',clevel='Cmp'))
+
+post_compare <- post_compare %>% bind_rows(fitERad60_100 %>% gather_draws(alpha,phi) %>% mutate(data='BBC 60-100 (UK)',clevel='Cmp'))
+
+
+post_compare <- post_compare %>% ungroup() %>% mutate(.variable = factor(.variable,levels=c('alpha','phi')))
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=rev(c('BBC Total (UK)','BBC Under 18 (UK)', 'BBC Education (UK)','BBC 18-30 (UK)', 'BBC Employed (UK)','BBC 30-60 (UK)','BBC NEET (UK)','BBC 60-100 (UK)'))))
+
+
+ggplot(post_compare,aes(x=data,y=.value,col=clevel)) + coord_flip() + stat_summary(fun.data=cred95,size=0.5) + facet_wrap(~.variable,scales='free_x',labeller=label_parsed) + xlab('') + ylab('') + theme(legend.position = "none") 
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (UK)','BBC Under 18 (UK)', 'BBC Education (UK)','BBC 18-30 (UK)', 'BBC Employed (UK)','BBC 30-60 (UK)','BBC NEET (UK)','BBC 60-100 (UK)'))))
+
+
+summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
+
+print.xtable(summary_df,file = './textables/ERadBBC.tex')
+
+```
+
+## Posterior Estimates (Stoufer)
+
+```{r sestimates, echo=FALSE,message=FALSE, fig.path='Figs/',fig.width=5, fig.height=5/2.5}
+post_compare <- fitStoufer_CE %>% gather_draws(tau,phi) %>% mutate(data='Census (E)',country='E')
+post_compare <- post_compare %>% bind_rows(fitStoufer_CW %>% gather_draws(tau,phi) %>% mutate(data='Census (W)',country='W'))
+post_compare <- post_compare %>% bind_rows(fitStoufer_CS %>% gather_draws(tau,phi) %>% mutate(data='Census (S)',country='S'))
+post_compare <- post_compare %>% bind_rows(fitStoufer_CNI %>% gather_draws(tau,phi) %>% mutate(data='Census (NI)',country='NI'))
+
+post_compare <- post_compare %>% bind_rows(fit_E_StoT %>% gather_draws(tau,phi) %>% mutate(data='BBC Total (E)',country='E'))
+post_compare <- post_compare %>% bind_rows(fit_NI_StoT %>% gather_draws(tau,phi) %>% mutate(data='BBC Total (NI)',country='NI'))
+post_compare <- post_compare %>% bind_rows(fit_W_StoT %>% gather_draws(tau,phi) %>% mutate(data='BBC Total (W)',country='W'))
+post_compare <- post_compare %>% bind_rows(fit_S_StoT %>% gather_draws(tau,phi) %>% mutate(data='BBC Total (S)',country='S'))
+post_compare <- post_compare %>% bind_rows(fitStoT %>% gather_draws(tau,phi) %>% mutate(data='BBC Total (UK)',country='UK'))
+
+post_compare <- post_compare %>% ungroup() %>% mutate(.variable = factor(.variable,levels=c('tau','phi')))
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=rev(c('BBC Total (UK)','Census (E)', 'BBC Total (E)', 'Census (S)','BBC Total (S)','Census (W)', 'BBC Total (W)','Census (NI)','BBC Total (NI)'))))
+
+cred95 <- function(x){return(data.frame(y=median(x),ymin=quantile(x,c(0.025)),ymax=quantile(x,0.975)))}
+
+ggplot(post_compare,aes(x=data,y=.value,col=country)) + coord_flip() + stat_summary(fun.data=cred95,size=0.5) + facet_wrap(~.variable,scales='free_x',labeller=label_parsed) + xlab('') + ylab('') + theme(legend.position = "none") 
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (UK)','Census (E)', 'BBC Total (E)', 'Census (S)','BBC Total (S)','Census (W)', 'BBC Total (W)','Census (NI)','BBC Total (NI)'))))
+
+
+summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
+
+print.xtable(summary_df,file = './textables/Stosubnational.tex')
+
+post_compare <- fitStoT %>% gather_draws(tau,phi) %>% mutate(data='BBC Total (UK)',clevel='Ref')
+post_compare <- post_compare %>% bind_rows(fitStoU %>% gather_draws(tau,phi) %>% mutate(data='BBC Under 18 (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitStoEd %>% gather_draws(tau,phi) %>% mutate(data='BBC Education (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitStoEm %>% gather_draws(tau,phi) %>% mutate(data='BBC Employed (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitStoN %>% gather_draws(tau,phi) %>% mutate(data='BBC NEET (UK)',clevel='Cmp'))
+
+post_compare <- post_compare %>% bind_rows(fitSto18_30 %>% gather_draws(tau,phi) %>% mutate(data='BBC 18-30 (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitSto30_60 %>% gather_draws(tau,phi) %>% mutate(data='BBC 30-60 (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitSto60_100 %>% gather_draws(tau,phi) %>% mutate(data='BBC 60-100 (UK)',clevel='Cmp'))
+
+post_compare <- post_compare %>% ungroup() %>% mutate(.variable = factor(.variable,levels=c('tau','phi')))
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=rev(c('BBC Total (UK)','BBC Under 18 (UK)', 'BBC Education (UK)','BBC 18-30 (UK)', 'BBC Employed (UK)','BBC 30-60 (UK)','BBC NEET (UK)','BBC 60-100 (UK)'))))
+
+ggplot(post_compare,aes(x=data,y=.value,col=clevel)) + coord_flip() + stat_summary(fun.data=cred95,size=0.5) + facet_wrap(~.variable,scales='free_x',labeller=label_parsed) + xlab('') + ylab('') + theme(legend.position = "none") 
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (UK)','BBC Under 18 (UK)', 'BBC Education (UK)','BBC 18-30 (UK)', 'BBC Employed (UK)','BBC 30-60 (UK)','BBC NEET (UK)','BBC 60-100 (UK)'))))
+
+
+summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
+
+print.xtable(summary_df,file = './textables/StoBBC.tex')
+```
+
+
+## Posterior Estimates (IO)
+
+```{r ioestimates, echo=FALSE,message=FALSE, fig.path='Figs/',fig.width=5, fig.height=2.5}
+post_compare <- fitIO_CE %>% gather_draws(gamma,phi) %>% mutate(data='Census (E)',country='E')
+post_compare <- post_compare %>% bind_rows(fitIO_CW %>% gather_draws(gamma,phi) %>% mutate(data='Census (W)',country='W'))
+post_compare <- post_compare %>% bind_rows(fitIO_CS %>% gather_draws(gamma,phi) %>% mutate(data='Census (S)',country='S'))
+post_compare <- post_compare %>% bind_rows(fitIO_CNI %>% gather_draws(gamma,phi) %>% mutate(data='Census (NI)',country='NI'))
+
+post_compare <- post_compare %>% bind_rows(fit_E_IOT %>% gather_draws(gamma,phi) %>% mutate(data='BBC Total (E)',country='E'))
+post_compare <- post_compare %>% bind_rows(fit_NI_IOT %>% gather_draws(gamma,phi) %>% mutate(data='BBC Total (NI)',country='NI'))
+post_compare <- post_compare %>% bind_rows(fit_W_IOT %>% gather_draws(gamma,phi) %>% mutate(data='BBC Total (W)',country='W'))
+post_compare <- post_compare %>% bind_rows(fit_S_IOT %>% gather_draws(gamma,phi) %>% mutate(data='BBC Total (S)',country='S'))
+post_compare <- post_compare %>% bind_rows(fitIOT %>% gather_draws(gamma,phi) %>% mutate(data='BBC Total (UK)',country='UK'))
+
+post_compare <- post_compare %>% ungroup() %>% mutate(.variable = factor(.variable,levels=c('gamma','phi')))
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=rev(c('BBC Total (UK)','Census (E)', 'BBC Total (E)', 'Census (S)','BBC Total (S)','Census (W)', 'BBC Total (W)','Census (NI)','BBC Total (NI)'))))
+
+
+cred95 <- function(x){return(data.frame(y=median(x),ymin=quantile(x,c(0.025)),ymax=quantile(x,0.975)))}
+
+ggplot(post_compare,aes(x=data,y=.value,col=country)) + coord_flip() + stat_summary(fun.data=cred95,size=0.5) + facet_wrap(~.variable,scales='free_x',labeller=label_parsed) + xlab('') + ylab('') + theme(legend.position = "none")
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (UK)','Census (E)', 'BBC Total (E)', 'Census (S)','BBC Total (S)','Census (W)', 'BBC Total (W)','Census (NI)','BBC Total (NI)'))))
+
+
+post_compare$.value[which(post_compare$.variable=='gamma')] = log10(post_compare$.value[which(post_compare$.variable=='gamma')])
+ 
+post_compare <- post_compare %>% mutate(.variable= fct_recode(.variable,'log10(gamma)'='gamma','phi'='phi'))
+
+
+summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
+
+print.xtable(summary_df,file = './textables/IOsubnational.tex')
+
+post_compare <- fitIOT %>% gather_draws(gamma,phi) %>% mutate(data='BBC Total (UK)',clevel='Ref')
+post_compare <- post_compare %>% bind_rows(fitIOU %>% gather_draws(gamma,phi) %>% mutate(data='BBC Under 18 (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitIOEd %>% gather_draws(gamma,phi) %>% mutate(data='BBC Education (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitIOEm %>% gather_draws(gamma,phi) %>% mutate(data='BBC Employed (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitION %>% gather_draws(gamma,phi) %>% mutate(data='BBC NEET (UK)',clevel='Cmp'))
+
+post_compare <- post_compare %>% bind_rows(fitIO18_30 %>% gather_draws(gamma,phi) %>% mutate(data='BBC 18-30 (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitIO30_60 %>% gather_draws(gamma,phi) %>% mutate(data='BBC 30-60 (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitIO60_100 %>% gather_draws(gamma,phi) %>% mutate(data='BBC 60-100 (UK)',clevel='Cmp'))
+
+post_compare <- post_compare %>% ungroup() %>% mutate(.variable = factor(.variable,levels=c('gamma','phi')))
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=rev(c('BBC Total (UK)','BBC Under 18 (UK)', 'BBC Education (UK)','BBC 18-30 (UK)', 'BBC Employed (UK)','BBC 30-60 (UK)','BBC NEET (UK)','BBC 60-100 (UK)'))))
+ 
+
+ggplot(post_compare,aes(x=data,y=.value,col=clevel)) + coord_flip() + stat_summary(fun.data=cred95,size=0.5) + facet_wrap(~.variable,scales='free_x',labeller=label_parsed) + xlab('') + ylab('') + theme(legend.position = "none")
+
+post_compare$.value[which(post_compare$.variable=='gamma')] = log10(post_compare$.value[which(post_compare$.variable=='gamma')])
+
+post_compare <- post_compare %>% mutate(.variable= fct_recode(.variable,'log10(gamma)'='gamma','phi'='phi'))
+post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (UK)','BBC Under 18 (UK)', 'BBC Education (UK)','BBC 18-30 (UK)', 'BBC Employed (UK)','BBC 30-60 (UK)','BBC NEET (UK)','BBC 60-100 (UK)'))))
+
+summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
+
+print.xtable(summary_df,file = './textables/IOBBC.tex')
+
+```
+
+## Posterior Estimates (Imp)
+
+```{r impestimates, echo=FALSE,message=FALSE, fig.path='Figs/',fig.width=2.5, fig.height=5/2.5}
+post_compare <- fitImp_CE %>% gather_draws(phi) %>% mutate(data='Census (E)',country='E')
+post_compare <- post_compare %>% bind_rows(fitImp_CW %>% gather_draws(phi) %>% mutate(data='Census (W)',country='W'))
+post_compare <- post_compare %>% bind_rows(fitImp_CS %>% gather_draws(phi) %>% mutate(data='Census (S)',country='S'))
+post_compare <- post_compare %>% bind_rows(fitImp_CNI %>% gather_draws(phi) %>% mutate(data='Census (NI)',country='NI'))
+
+post_compare <- post_compare %>% bind_rows(fit_E_ImpT %>% gather_draws(phi) %>% mutate(data='BBC Total (E)',country='E'))
+post_compare <- post_compare %>% bind_rows(fit_NI_ImpT %>% gather_draws(phi) %>% mutate(data='BBC Total (NI)',country='NI'))
+post_compare <- post_compare %>% bind_rows(fit_W_ImpT %>% gather_draws(phi) %>% mutate(data='BBC Total (W)',country='W'))
+post_compare <- post_compare %>% bind_rows(fit_S_ImpT %>% gather_draws(phi) %>% mutate(data='BBC Total (S)',country='S'))
+post_compare <- post_compare %>% bind_rows(fitImpT %>% gather_draws(phi) %>% mutate(data='BBC Total (UK)',country='UK'))
+
+post_compare <- post_compare %>% ungroup() %>% mutate(.variable = factor(.variable,levels=c('phi')))
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=rev(c('BBC Total (UK)','Census (E)', 'BBC Total (E)', 'Census (S)','BBC Total (S)','Census (W)', 'BBC Total (W)','Census (NI)','BBC Total (NI)'))))
+
+cred95 <- function(x){return(data.frame(y=median(x),ymin=quantile(x,c(0.025)),ymax=quantile(x,0.975)))}
+
+ggplot(post_compare,aes(x=data,y=.value,col=country)) + coord_flip() + stat_summary(fun.data=cred95,size=0.5) + facet_wrap(~.variable,scales='free_x',labeller=label_parsed) + xlab('') + ylab('') + theme(legend.position = "none")
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (UK)','Census (E)', 'BBC Total (E)', 'Census (S)','BBC Total (S)','Census (W)', 'BBC Total (W)','Census (NI)','BBC Total (NI)'))))
+
+summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
+
+
+print.xtable(summary_df,file = './textables/Impsubnational.tex')
+
+post_compare <- fitImpT %>% gather_draws(phi) %>% mutate(data='BBC Total (UK)',clevel='Ref')
+post_compare <- post_compare %>% bind_rows(fitImpU %>% gather_draws(phi) %>% mutate(data='BBC Under 18 (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitImpEd %>% gather_draws(phi) %>% mutate(data='BBC Education (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitImpEm %>% gather_draws(phi) %>% mutate(data='BBC Employed (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitImpN %>% gather_draws(phi) %>% mutate(data='BBC NEET (UK)',clevel='Cmp'))
+
+post_compare <- post_compare %>% bind_rows(fitImp18_30 %>% gather_draws(phi) %>% mutate(data='BBC 18-30 (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitImp30_60 %>% gather_draws(phi) %>% mutate(data='BBC 30-60 (UK)',clevel='Cmp'))
+post_compare <- post_compare %>% bind_rows(fitImp60_100 %>% gather_draws(phi) %>% mutate(data='BBC 60-100 (UK)',clevel='Cmp'))
+
+post_compare <- post_compare %>% ungroup() %>% mutate(.variable = factor(.variable,levels=c('phi')))
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=rev(c('BBC Total (UK)','BBC Under 18 (UK)', 'BBC Education (UK)','BBC 18-30 (UK)', 'BBC Employed (UK)','BBC 30-60 (UK)','BBC NEET (UK)','BBC 60-100 (UK)'))))
+
+ggplot(post_compare,aes(x=data,y=.value,col=clevel)) + coord_flip() + stat_summary(fun.data=cred95,size=0.5) + facet_wrap(~.variable,scales='free_x',labeller=label_parsed) + xlab('') + ylab('') + theme(legend.position = "none")
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (UK)','BBC Under 18 (UK)', 'BBC Education (UK)','BBC 18-30 (UK)', 'BBC Employed (UK)','BBC 30-60 (UK)','BBC NEET (UK)','BBC 60-100 (UK)'))))
+
+summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
+
+print.xtable(summary_df,file = './textables/ImpBBC.tex')
+
+
+```
+
+# Posterior Predictive Checks (CPC)
+
+```{r CPC, echo=FALSE,message=FALSE, fig.path='Figs/',fig.width=7, fig.height=7}
+
+load('CPCpost.RData')
+
+ggplot(CPCpost %>% filter(is.element(data,c('BBC Total (England)','BBC Total (Wales)','BBC Total (Scotland)','BBC Total (NI)'))),aes(x=factor(model,levels=rev(c('CDO','CDE','ERad','CDP','IO','Imp','Sto'))),y=CPCpp)) + coord_flip() + stat_summary(fun.data=cred95,size=0.25) + facet_wrap(~factor(data,levels=c('BBC Total (England)','BBC Total (Wales)','BBC Total (Scotland)','BBC Total (NI)'))) + xlab('Mobility Model') + ylab('CPC (Posterior Predictive Distribution)') + theme(text = element_text(size=8)) + theme(legend.position = "none") 
+
+ggplot(CPCpost %>% filter(is.element(data, c('BBC Total (UK)','BBC Under 18 (UK)', 'BBC Education (UK)', 'BBC Employed (UK)', 'BBC NEET (UK)'))),aes(x=factor(model,levels=rev(c('CDO','CDE','ERad','CDP','IO','Imp','Sto'))),y=CPCpp)) + coord_flip() + stat_summary(fun.data=cred95,size=0.25) + facet_wrap(~factor(data,levels=c('BBC Total (UK)','BBC Under 18 (UK)', 'BBC Education (UK)', 'BBC Employed (UK)', 'BBC NEET (UK)'))) + xlab('Mobility Model') + ylab('CPC (Posterior Predictive Distribution)') + theme(text = element_text(size=8)) + theme(legend.position = "none") 
+
+ggplot(CPCpost %>% filter(is.element(data, c('BBC Total (UK)','BBC Under 18 (UK)', 'BBC 18-30 (UK)','BBC 30-60 (UK)','BBC 60-100 (UK)'))),aes(x=factor(model,levels=rev(c('CDO','CDE','ERad','CDP','IO','Imp','Sto'))),y=CPCpp)) + coord_flip() + stat_summary(fun.data=cred95,size=0.25) + facet_wrap(~factor(data,levels=c('BBC Total (UK)','BBC Under 18 (UK)', 'BBC 18-30 (UK)','BBC 30-60 (UK)','BBC 60-100 (UK)'))) + xlab('Mobility Model') + ylab('CPC (Posterior Predictive Distribution)') + theme(text = element_text(size=8)) + theme(legend.position = "none") 
+
+```
+
+## Imputed BBC flux matrices from CDO Model
+
+```{r imputed flux matrices, echo=FALSE,message=FALSE, fig.path='Figs/',fig.width=5, fig.height=5}
+source('./PPDfuncs.R')
+
+
+
+mobility_dat = list(N=lads_map$all,
+                    r = as.matrix(dist(st_coordinates(LADS_centroid %>% select(geometry)))),
+                    flux = rep(1,length(lads_map$TotPop)))
+
+census_flux <- as.matrix(UKcensus_flows_lads %>% filter(!(is.na(from)|is.na(to))) %>% spread(to,freq) %>% ungroup %>% select(-from,-country))
+
+census_flux[is.na(census_flux)] = 0
+
+ppCDOCE<-CDOmatflux(mobility_dat,fitCDO_CE,TRUE,FALSE,BBCmoves_by_LAD$census_p_move)
+ppCDOCS<-CDOmatflux(mobility_dat,fitCDO_CS,TRUE,FALSE,BBCmoves_by_LAD$census_p_move)
+ppCDOT<-CDOmatflux(mobility_dat,fitCDOT,TRUE,FALSE,BBCmoves_by_LAD$p_move)
+
+# Imputed Flux matrices (Age groups)
+
+mobility_dat = list(N=lads_map$under18,
+                    r = as.matrix(dist(st_coordinates(LADS_centroid %>% select(geometry)))),
+                    flux = rep(1,length(lads_map$TotPop)))
+
+ppCDOU<-CDOmatflux(mobility_dat,fitCDOU,TRUE,FALSE,unlist(age_df %>% filter(group=='Under 18') %>% select(pred_m1r)))
+
+mobility_dat = list(N=lads_map$a18_30,
+                    r = as.matrix(dist(st_coordinates(LADS_centroid %>% select(geometry)))),
+                    flux = rep(1,length(lads_map$TotPop)))
+
+
+ppCDO18_30<-CDOmatflux(mobility_dat,fitCDO18_30,TRUE,FALSE,unlist(age_df %>% filter(group=='18-30') %>% select(pred_m1r)))
+
+mobility_dat = list(N=lads_map$a30_60,
+                    r = as.matrix(dist(st_coordinates(LADS_centroid %>% select(geometry)))),
+                    flux = rep(1,length(lads_map$TotPop)))
+
+
+ppCDO30_60<-CDOmatflux(mobility_dat,fitCDO30_60,TRUE,FALSE,unlist(age_df %>% filter(group=='30-60') %>% select(pred_m1r)))
+
+mobility_dat = list(N=lads_map$a60_100,
+                    r = as.matrix(dist(st_coordinates(LADS_centroid %>% select(geometry)))),
+                    flux = rep(1,length(lads_map$TotPop)))
+
+ppCDO60_100<-CDOmatflux(mobility_dat,fitCDO60_100,TRUE,FALSE,unlist(age_df %>% filter(group=='60-100') %>% select(pred_m1r)))
+
+imputed_flux<-as_tibble(melt(ppCDOCE$mean)) %>% mutate(data='E Census')
+imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDOT$mean)) %>% mutate(data='BBC Total'))
+imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDOU$mean)) %>% mutate(data='BBC Under 18'))
+imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDO18_30$mean)) %>% mutate(data='BBC 18-30'))
+imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDO30_60$mean)) %>% mutate(data='BBC 30-60'))
+imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDO60_100$mean)) %>% mutate(data='BBC 60-100'))
+
+ggplot(imputed_flux,aes(x=Var1,y=Var2,fill=log10(1+value))) + 
+  geom_tile() + scale_fill_distiller(palette='Spectral',name='log10(1+count)') + 
+  theme(axis.ticks=element_blank(),axis.text=element_blank(),legend.position = 'bottom') + 
+  facet_wrap(~factor(data,levels=c('E Census','BBC Under 18', 'BBC 18-30','BBC Total','BBC 30-60','BBC 60-100')))+ggtitle('Imputed Flux (Competing Destinations)') + xlab('from') + ylab('to')
+
+tmp <- ppCDOT$mean
+colnames(tmp)<-lads_map$lad17cd
+rownames(tmp)<-lads_map$lad17cd
+write.table(tmp,file='../imputed_flux/ppCDOT_furthest.csv',row.names=T,col.names=T)
+
+tmp <- ppCDOU$mean
+colnames(tmp)<-lads_map$lad17cd
+rownames(tmp)<-lads_map$lad17cd
+write.table(tmp,file='../imputed_flux/ppCDOU_furthest.csv',row.names=T,col.names=T)
+
+tmp <- ppCDO18_30$mean
+colnames(tmp)<-lads_map$lad17cd
+rownames(tmp)<-lads_map$lad17cd
+write.table(tmp,file='../imputed_flux/ppCDO18_30_furthest.csv',row.names=T,col.names=T)
+
+tmp <- ppCDO30_60$mean
+colnames(tmp)<-lads_map$lad17cd
+rownames(tmp)<-lads_map$lad17cd
+write.table(tmp,file='../imputed_flux/ppCDO30_60_furthest.csv',row.names=T,col.names=T)
+
+tmp <- ppCDO60_100$mean
+colnames(tmp)<-lads_map$lad17cd
+rownames(tmp)<-lads_map$lad17cd
+write.table(tmp,file='../imputed_flux/ppCDO60_100_furthest.csv',row.names=T,col.names=T)
+
+```
+
+## Risk difference between imputed Census and BBC commuter flows
+
+```{r meta_FOI,echo=FALSE,message=FALSE,warning=FALSE}
+mkflux_mats <-function(theta, move_m, N)
+{
+  Cg = length(theta)
+  if(length(move_m)!=Cg){return(NA)}
+  P  = dim(move_m[[1]])[1]
+  effectiveN = numeric(P)
+  
+  move_sums = lapply(move_m,rowSums)
+  
+  flux_term = lapply(1:Cg,function(g){1.0/((1+theta[[g]]*move_sums[[g]]))})
+  
+  fluxmat = lapply(1:Cg,function(x){matrix(0,P,P)})
+  for(g in 1:Cg)
+  {
+    for(j in 1:P)
+    {
+      effectiveN[j] = effectiveN[j] + N[[g]][j]/(1+theta[g]*move_sums[[g]][j])
+      for(i in 1:P)
+      {
+        effectiveN[j] = effectiveN[j] + theta[g]*move_m[[g]][i,j]*N[[g]][i]/(1+theta[g]*move_sums[[g]][i])
+        fluxmat[[g]][j,i] = theta[g]*move_m[[g]][j,i]*flux_term[[g]][i]*flux_term[[g]][j]
+      }
+    }
+    flux_term[[g]] = flux_term[[g]]^2
+  }
+  return(list(effectiveN=effectiveN,flux_term=flux_term,fluxmat=fluxmat))
+}
+
+calculate_FOI <- function(theta,move_m,N,I)
+{
+  Cg = length(theta)
+  if(length(move_m)!=Cg){return(NA)}
+  P  = dim(move_m[[1]])[1]
+  
+  flux_mats <- mkflux_mats(theta,move_m,N)
+  
+  fluxmat = flux_mats$fluxmat
+  flux_term = flux_mats$flux_term
+  effectiveN = flux_mats$effectiveN
+  
+  term1 = matrix(0,P,Cg)
+  term2 = matrix(0,P,Cg)
+  term3 = matrix(0,P,Cg)
+  
+  for(j in 1:P)
+  {
+    for(g in 1:Cg)
+    {
+      
+      for(k in 1:Cg)
+      {
+        term1[j,g] = term1[j,g] + (I[[k]][j]*flux_term[[k]][j]) / effectiveN[j]
+      }
+      
+      for(i in 1:P)
+      {
+        Itot = 0
+        for(k in 1:Cg)
+        {
+          term2[j,g] = term2[j,g] + I[[k]][i] * fluxmat[[k]][i,j]/effectiveN[j]
+          Itot = Itot + I[[k]][i]
+        }
+        
+        term3[j,g] = term3[j,g] + (fluxmat[[g]][j,i]*Itot)/effectiveN[i]
+        
+      }
+      
+    }
+  
+  }
+  
+  avg_inf_rate = rowSums(sapply(1:Cg,function(g){(term1[,g] + term2[,g] + term3[,g])*N[[g]]}))
+                     
+  return(list(avg_inf_rate=avg_inf_rate,term1=term1,term2=term2,term3=term3,effectiveN=effectiveN))
+  
+}
+
+```
+
+
+```{r risk_map_Haslemere, echo=FALSE,message=FALSE, fig.path='Figs/',fig.width=5, fig.height=5}
+
+I0=numeric(391)
+I0[234]=1
+
+foi_gC<-calculate_FOI(theta=c(1.0),
+                      move_m=list(ppCDOCE$mean/lads_map$all),
+                      N=list(lads_map$all),
+                      I=list(I0)) 
+
+# I0a=numeric(391)
+# I0a[234] = sum(lads_map$under18)/sum(lads_map$all)
+# 
+# I0b=numeric(391)
+# I0b[234] = sum(lads_map$a18_30)/sum(lads_map$all)
+# 
+# I0c=numeric(391)
+# I0c[234] = sum(lads_map$a30_60)/sum(lads_map$all)
+# 
+# I0d=numeric(391)
+# I0d[234] = sum(lads_map$a60_100)/sum(lads_map$all)
+
+
+foi_gU<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
+                      move_m=list(ppCDOU$mean / lads_map$under18,
+                                  ppCDO18_30$mean / lads_map$a18_30,
+                                  ppCDO30_60$mean / lads_map$a30_60,
+                                  ppCDO60_100$mean / lads_map$a60_100),
+                      N=list(lads_map$under18,lads_map$a18_30,
+                             lads_map$a30_60,lads_map$a60_100),
+                      I=list(I0,rep(0,391),rep(0,391),rep(0,391))) 
+
+foi_gCR<-calculate_FOI(theta=c(1.0),
+                       move_m=list(census_flux/lads_map$all),
+                       N=list(lads_map$all),
+                       I=list(I0)) 
+
+foi_gT<-calculate_FOI(theta=c(1.0),
+                      move_m=list(ppCDOT$mean/lads_map$all),
+                      N=list(lads_map$all),
+                      I=list(I0)) 
+
+foi_gU<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
+                      move_m=list(ppCDOU$mean / lads_map$under18,
+                                  ppCDO18_30$mean / lads_map$a18_30,
+                                  ppCDO30_60$mean / lads_map$a30_60,
+                                  ppCDO60_100$mean / lads_map$a60_100),
+                      N=list(lads_map$under18,lads_map$a18_30,
+                             lads_map$a30_60,lads_map$a60_100),
+                      I=list(I0,rep(0,391),rep(0,391),rep(0,391))) 
+
+foi_g18_30<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
+                          move_m=list(ppCDOU$mean / lads_map$under18,
+                                      ppCDO18_30$mean / lads_map$a18_30,
+                                      ppCDO30_60$mean / lads_map$a30_60,
+                                      ppCDO60_100$mean / lads_map$a60_100),
+                      N=list(lads_map$under18,lads_map$a18_30,
+                             lads_map$a30_60,lads_map$a60_100),
+                      I=list(rep(0,391),I0,rep(0,391),rep(0,391)) ) 
+
+foi_g30_60<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
+                          move_m=list(ppCDOU$mean / lads_map$under18,
+                                      ppCDO18_30$mean / lads_map$a18_30,
+                                      ppCDO30_60$mean / lads_map$a30_60,
+                                      ppCDO60_100$mean / lads_map$a60_100),
+                          N=list(lads_map$under18,lads_map$a18_30,
+                                 lads_map$a30_60,lads_map$a60_100),
+                          I=list(rep(0,391),rep(0,391),I0,rep(0,391)) ) 
+
+foi_g60_100<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
+                           move_m=list(ppCDOU$mean / lads_map$under18,
+                                       ppCDO18_30$mean / lads_map$a18_30,
+                                       ppCDO30_60$mean / lads_map$a30_60,
+                                       ppCDO60_100$mean / lads_map$a60_100),
+                          N=list(lads_map$under18,lads_map$a18_30,
+                                 lads_map$a30_60,lads_map$a60_100),
+                          I=list(rep(0,391),rep(0,391),rep(0,391),I0) ) 
+
+z = lads_map %>% mutate(lC = (foi_gC$avg_inf_rate))
+z = z %>% mutate(lT = (foi_gT$avg_inf_rate),
+                 lU = ((foi_gU$avg_inf_rate)-lT),
+                 l18_30 = ((foi_g18_30$avg_inf_rate)-lT),
+                 l30_60 = ((foi_g30_60$avg_inf_rate)-lT),
+                 l60_100 = ((foi_g60_100$avg_inf_rate)-lT))
+
+max_val = max(c(z$lU[-234],z$l18_30[-234],z$l30_60[-234],z$l60_100[-234]),na.rm=T)
+min_val = min(c(z$lU[-234],z$l18_30[-234],z$l30_60[-234],z$l60_100[-234]),na.rm=T)
+
+
+#scale_fill_gradient2(name ='Relative Risk',trans='sqrt',midpoint=1,low=muted('blue'),high=muted('red'),limits=c(min_val,max_val)) + 
+p1=ggplot(st_sf(z[-234,]),aes(fill=lU)) + geom_sf(size=0.0) + 
+  scale_fill_gradient2(midpoint=0,
+                       low=muted('blue'),high=muted('red'),
+                       limits=c(min_val,max_val),name ='Risk Difference') + 
+  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
+  theme(legend.position = "right") + 
+  ggtitle('BBC Under 18')+ theme(text = element_text(size=8))+ 
+  geom_sf(data=ukoutline,fill=NA,size=0.01) +
+  xlim(350000,550000) + ylim(50000,250000)+
+  geom_sf(data=st_sf(z[234,]),fill=NA,size=0.25)
+
+#c(343,351,354)
+
+p2=ggplot(st_sf(z[-234,]),aes(fill=l18_30)) + geom_sf(size=0.0) + 
+  scale_fill_gradient2(midpoint=0,
+                       low=muted('blue'),high=muted('red'),
+                       limits=c(min_val,max_val),name ='Risk Difference') + 
+  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
+  theme(legend.position = "right") + 
+  ggtitle('BBC 18-30')+ theme(text = element_text(size=8))+ 
+  geom_sf(data=ukoutline,fill=NA,size=0.01) +
+  xlim(350000,550000) + ylim(50000,250000)+
+  geom_sf(data=st_sf(z[234,]),fill=NA,size=0.25)
+
+
+p3=ggplot(st_sf(z[-234,]),aes(fill=l30_60)) + geom_sf(size=0.0) + 
+  scale_fill_gradient2(midpoint=0,
+                       low=muted('blue'),high=muted('red'),
+                       limits=c(min_val,max_val),name ='Risk Difference') + 
+  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
+  theme(legend.position = "right") + 
+  ggtitle('BBC 30-60')+ theme(text = element_text(size=8))+ 
+  geom_sf(data=ukoutline,fill=NA,size=0.01) +
+  xlim(350000,550000) + ylim(50000,250000)+
+  geom_sf(data=st_sf(z[234,]),fill=NA,size=0.25)
+
+
+p4=ggplot(st_sf(z[-234,]),aes(fill=l60_100)) + geom_sf(size=0.0) + 
+  scale_fill_gradient2(midpoint=0,
+                       low=muted('blue'),high=muted('red'),
+                       limits=c(min_val,max_val),name ='Risk Difference') + 
+  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
+  theme(legend.position = "right") + 
+  ggtitle('BBC 60-100')+ theme(text = element_text(size=8))+ 
+  geom_sf(data=ukoutline,fill=NA,size=0.01) +
+  xlim(350000,550000) + ylim(50000,250000)+
+  geom_sf(data=st_sf(z[234,]),fill=NA,size=0.25)
+
+p1+p2+p3+p4 + plot_layout(guides='collect')
+
+```
+
+```{r risk_map_Falkirk, echo=FALSE,message=FALSE, fig.path='Figs/',fig.width=5, fig.height=5}
+
+I0=numeric(391)
+I0[344]=1
+
+foi_gC<-calculate_FOI(theta=c(1.0),
+                      move_m=list(ppCDOCE$mean/lads_map$all),
+                      N=list(lads_map$all),
+                      I=list(I0)) 
+
+
+foi_gU<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
+                      move_m=list(ppCDOU$mean / lads_map$under18,
+                                  ppCDO18_30$mean / lads_map$a18_30,
+                                  ppCDO30_60$mean / lads_map$a30_60,
+                                  ppCDO60_100$mean / lads_map$a60_100),
+                      N=list(lads_map$under18,lads_map$a18_30,
+                             lads_map$a30_60,lads_map$a60_100),
+                      I=list(I0,rep(0,391),rep(0,391),rep(0,391))) 
+
+foi_gCR<-calculate_FOI(theta=c(1.0),
+                       move_m=list(census_flux/lads_map$all),
+                       N=list(lads_map$all),
+                       I=list(I0)) 
+
+foi_gT<-calculate_FOI(theta=c(1.0),
+                      move_m=list(ppCDOT$mean/lads_map$all),
+                      N=list(lads_map$all),
+                      I=list(I0)) 
+
+foi_gU<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
+                      move_m=list(ppCDOU$mean / lads_map$under18,
+                                  ppCDO18_30$mean / lads_map$a18_30,
+                                  ppCDO30_60$mean / lads_map$a30_60,
+                                  ppCDO60_100$mean / lads_map$a60_100),
+                      N=list(lads_map$under18,lads_map$a18_30,
+                             lads_map$a30_60,lads_map$a60_100),
+                      I=list(I0,rep(0,391),rep(0,391),rep(0,391))) 
+
+foi_g18_30<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
+                          move_m=list(ppCDOU$mean / lads_map$under18,
+                                      ppCDO18_30$mean / lads_map$a18_30,
+                                      ppCDO30_60$mean / lads_map$a30_60,
+                                      ppCDO60_100$mean / lads_map$a60_100),
+                          N=list(lads_map$under18,lads_map$a18_30,
+                                 lads_map$a30_60,lads_map$a60_100),
+                          I=list(rep(0,391),I0,rep(0,391),rep(0,391)) ) 
+
+foi_g30_60<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
+                          move_m=list(ppCDOU$mean / lads_map$under18,
+                                      ppCDO18_30$mean / lads_map$a18_30,
+                                      ppCDO30_60$mean / lads_map$a30_60,
+                                      ppCDO60_100$mean / lads_map$a60_100),
+                          N=list(lads_map$under18,lads_map$a18_30,
+                                 lads_map$a30_60,lads_map$a60_100),
+                          I=list(rep(0,391),rep(0,391),I0,rep(0,391)) ) 
+
+foi_g60_100<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
+                           move_m=list(ppCDOU$mean / lads_map$under18,
+                                       ppCDO18_30$mean / lads_map$a18_30,
+                                       ppCDO30_60$mean / lads_map$a30_60,
+                                       ppCDO60_100$mean / lads_map$a60_100),
+                           N=list(lads_map$under18,lads_map$a18_30,
+                                  lads_map$a30_60,lads_map$a60_100),
+                           I=list(rep(0,391),rep(0,391),rep(0,391),I0) ) 
+
+z = lads_map %>% mutate(lC = (foi_gC$avg_inf_rate))
+z = z %>% mutate(lT = (foi_gT$avg_inf_rate),
+                 lU = ((foi_gU$avg_inf_rate)-lT),
+                 l18_30 = ((foi_g18_30$avg_inf_rate)-lT),
+                 l30_60 = ((foi_g30_60$avg_inf_rate)-lT),
+                 l60_100 = ((foi_g60_100$avg_inf_rate)-lT))
+
+max_val = max(c(z$lU[-344],z$l18_30[-344],z$l30_60[-344],z$l60_100[-344]),na.rm=T)
+min_val = min(c(z$lU[-344],z$l18_30[-344],z$l30_60[-344],z$l60_100[-344]),na.rm=T)
+
+
+#scale_fill_gradient2(name ='Relative Risk',trans='sqrt',midpoint=1,low=muted('blue'),high=muted('red'),limits=c(min_val,max_val)) + 
+p1=ggplot(st_sf(z[-344,] %>% filter(ctry11NM=='Scotland')),aes(fill=lU)) + geom_sf(size=0.0) + 
+  scale_fill_gradient2(midpoint=0,
+                       low=muted('blue'),high=muted('red'),
+                       limits=c(min_val,max_val),name ='Risk Difference') + 
+  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
+  theme(legend.position = "right") + 
+  ggtitle('BBC Under 18')+ theme(text = element_text(size=8))+
+  geom_sf(data=st_sf(z[344,]),fill=NA,size=0.25)+ 
+  ylim(550000,750000) + xlim(100000,400000)
+
+#c(343,351,354)
+
+p2=ggplot(st_sf(z[-344,]%>% filter(ctry11NM=='Scotland')),aes(fill=l18_30)) + geom_sf(size=0.0) + 
+  scale_fill_gradient2(midpoint=0,
+                       low=muted('blue'),high=muted('red'),
+                       limits=c(min_val,max_val),name ='Risk Difference') + 
+  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
+  theme(legend.position = "right") + 
+  ggtitle('BBC 18-30')+ theme(text = element_text(size=8))+
+  geom_sf(data=st_sf(z[344,]),fill=NA,size=0.25)+
+  ylim(550000,750000) + xlim(100000,400000)
+
+
+p3=ggplot(st_sf(z[-344,]%>% filter(ctry11NM=='Scotland')),aes(fill=l30_60)) + geom_sf(size=0.0) + 
+  scale_fill_gradient2(midpoint=0,
+                       low=muted('blue'),high=muted('red'),
+                       limits=c(min_val,max_val),name ='Risk Difference') + 
+  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
+  theme(legend.position = "right") + 
+  ggtitle('BBC 30-60')+ theme(text = element_text(size=8))+
+  geom_sf(data=st_sf(z[344,]),fill=NA,size=0.25)+
+  ylim(550000,750000) + xlim(100000,400000)
+
+
+p4=ggplot(st_sf(z[-344,]%>% filter(ctry11NM=='Scotland')),aes(fill=l60_100)) + geom_sf(size=0.0) + 
+  scale_fill_gradient2(midpoint=0,
+                       low=muted('blue'),high=muted('red'),
+                       limits=c(min_val,max_val),name ='Risk Difference') + 
+  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
+  theme(legend.position = "right") + 
+  ggtitle('BBC 60-100')+ theme(text = element_text(size=8))+
+  geom_sf(data=st_sf(z[344,]),fill=NA,size=0.25)+
+  ylim(550000,750000) + xlim(100000,400000)
+
+p1+p2+p3+p4 + plot_layout(guides='collect')
+
+```
+
+```{r risk_map_barnet, echo=FALSE,message=FALSE, fig.path='Figs/',fig.width=5, fig.height=5}
+
+I0=numeric(391)
+I0[296]=1
+
+foi_gC<-calculate_FOI(theta=c(1.0),
+                      move_m=list(ppCDOCE$mean/lads_map$all),
+                      N=list(lads_map$all),
+                      I=list(I0)) 
+
+
+foi_gU<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
+                      move_m=list(ppCDOU$mean / lads_map$under18,
+                                  ppCDO18_30$mean / lads_map$a18_30,
+                                  ppCDO30_60$mean / lads_map$a30_60,
+                                  ppCDO60_100$mean / lads_map$a60_100),
+                      N=list(lads_map$under18,lads_map$a18_30,
+                             lads_map$a30_60,lads_map$a60_100),
+                      I=list(I0,rep(0,391),rep(0,391),rep(0,391))) 
+
+foi_gCR<-calculate_FOI(theta=c(1.0),
+                       move_m=list(census_flux/lads_map$all),
+                       N=list(lads_map$all),
+                       I=list(I0)) 
+
+foi_gT<-calculate_FOI(theta=c(1.0),
+                      move_m=list(ppCDOT$mean/lads_map$all),
+                      N=list(lads_map$all),
+                      I=list(I0)) 
+
+foi_gU<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
+                      move_m=list(ppCDOU$mean / lads_map$under18,
+                                  ppCDO18_30$mean / lads_map$a18_30,
+                                  ppCDO30_60$mean / lads_map$a30_60,
+                                  ppCDO60_100$mean / lads_map$a60_100),
+                      N=list(lads_map$under18,lads_map$a18_30,
+                             lads_map$a30_60,lads_map$a60_100),
+                      I=list(I0,rep(0,391),rep(0,391),rep(0,391))) 
+
+foi_g18_30<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
+                          move_m=list(ppCDOU$mean / lads_map$under18,
+                                      ppCDO18_30$mean / lads_map$a18_30,
+                                      ppCDO30_60$mean / lads_map$a30_60,
+                                      ppCDO60_100$mean / lads_map$a60_100),
+                          N=list(lads_map$under18,lads_map$a18_30,
+                                 lads_map$a30_60,lads_map$a60_100),
+                          I=list(rep(0,391),I0,rep(0,391),rep(0,391)) ) 
+
+foi_g30_60<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
+                          move_m=list(ppCDOU$mean / lads_map$under18,
+                                      ppCDO18_30$mean / lads_map$a18_30,
+                                      ppCDO30_60$mean / lads_map$a30_60,
+                                      ppCDO60_100$mean / lads_map$a60_100),
+                          N=list(lads_map$under18,lads_map$a18_30,
+                                 lads_map$a30_60,lads_map$a60_100),
+                          I=list(rep(0,391),rep(0,391),I0,rep(0,391)) ) 
+
+foi_g60_100<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
+                           move_m=list(ppCDOU$mean / lads_map$under18,
+                                       ppCDO18_30$mean / lads_map$a18_30,
+                                       ppCDO30_60$mean / lads_map$a30_60,
+                                       ppCDO60_100$mean / lads_map$a60_100),
+                           N=list(lads_map$under18,lads_map$a18_30,
+                                  lads_map$a30_60,lads_map$a60_100),
+                           I=list(rep(0,391),rep(0,391),rep(0,391),I0) ) 
+
+z = lads_map %>% mutate(lC = (foi_gC$avg_inf_rate))
+z = z %>% mutate(lT = (foi_gT$avg_inf_rate),
+                 lU = ((foi_gU$avg_inf_rate)-lT),
+                 l18_30 = ((foi_g18_30$avg_inf_rate)-lT),
+                 l30_60 = ((foi_g30_60$avg_inf_rate)-lT),
+                 l60_100 = ((foi_g60_100$avg_inf_rate)-lT))
+
+max_val = max(c(z$lU[-296],z$l18_30[-296],z$l30_60[-296],z$l60_100[-296]),na.rm=T)
+min_val = min(c(z$lU[-296],z$l18_30[-296],z$l30_60[-296],z$l60_100[-296]),na.rm=T)
+
+
+#scale_fill_gradient2(name ='Relative Risk',trans='sqrt',midpoint=1,low=muted('blue'),high=muted('red'),limits=c(min_val,max_val)) + 
+p1=ggplot(st_sf(z[-296,] %>% filter(ctry11NM=='England')),aes(fill=lU)) + geom_sf(size=0.0) + 
+  scale_fill_gradient2(midpoint=0,
+                       low=muted('blue'),high=muted('red'),
+                       limits=c(min_val,max_val),name ='Risk Difference') + 
+  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
+  theme(legend.position = "right") + 
+  ggtitle('BBC Under 18')+ theme(text = element_text(size=8))+
+  xlim(450000,600000) + ylim(150000,250000)+
+  geom_sf(data=st_sf(z[296,]),fill=NA,size=0.25)
+
+#c(343,351,354)
+
+p2=ggplot(st_sf(z[-296,]%>% filter(ctry11NM=='England')),aes(fill=l18_30)) + geom_sf(size=0.0) + 
+  scale_fill_gradient2(midpoint=0,
+                       low=muted('blue'),high=muted('red'),
+                       limits=c(min_val,max_val),name ='Risk Difference') + 
+  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
+  theme(legend.position = "right") + 
+  ggtitle('BBC 18-30')+ theme(text = element_text(size=8))+
+  xlim(450000,600000) + ylim(150000,250000)+
+  geom_sf(data=st_sf(z[296,]),fill=NA,size=0.25)
+
+p3=ggplot(st_sf(z[-296,]%>% filter(ctry11NM=='England')),aes(fill=l30_60)) + geom_sf(size=0.0) + 
+  scale_fill_gradient2(midpoint=0,
+                       low=muted('blue'),high=muted('red'),
+                       limits=c(min_val,max_val),name ='Risk Difference') + 
+  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
+  theme(legend.position = "right") + 
+  ggtitle('BBC 30-60')+ theme(text = element_text(size=8))+
+  xlim(450000,600000) + ylim(150000,250000)+
+  geom_sf(data=st_sf(z[296,]),fill=NA,size=0.25)
+
+
+p4=ggplot(st_sf(z[-296,]%>% filter(ctry11NM=='England')),aes(fill=l60_100)) + geom_sf(size=0.0) + 
+  scale_fill_gradient2(midpoint=0,
+                       low=muted('blue'),high=muted('red'),
+                       limits=c(min_val,max_val),name ='Risk Difference') + 
+  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
+  theme(legend.position = "right") + 
+  ggtitle('BBC 60-100')+ theme(text = element_text(size=8))+
+  xlim(450000,600000) + ylim(150000,250000)+
+  geom_sf(data=st_sf(z[296,]),fill=NA,size=0.25)
+
+p1+p2+p3+p4 + plot_layout(guides='collect')
+
+```

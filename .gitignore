@@ -1,0 +1,8 @@
+*.RData
+*_cache
+*_files
+*.rds
+.DS_Store
+nohup.out
+.Rhistory
+

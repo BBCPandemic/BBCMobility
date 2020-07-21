@@ -1,0 +1,722 @@
+---
+title: "Mobility Model Comparison (Census)"
+author: "Andrew J K Conlan"
+date: "16/03/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,cache=TRUE)
+```
+
+```{r load, echo=FALSE, message=FALSE,warning=FALSE, fig.path='Figs/'}
+require(sf)
+require(reshape2)
+require(tidyverse)
+require(ggplot2)
+require(rstan)
+require(loo)
+require(tidybayes)
+require(patchwork)
+require(scales)
+require(xtable)
+require(ggrepel)
+
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+
+load('../../lads_map.RData')
+load('../flux/mobility_flux_next.RData')
+load('../flux/total_census_flux.RData')
+load('../flux/census_flux.RData')
+
+UKcensus_flows_lads <- EWcensus_flows_lads %>% mutate(country='England & Wales')
+UKcensus_flows_lads <- UKcensus_flows_lads %>% 
+  bind_rows(scotland_census_flows_lads %>% mutate(country='Scotland'))
+UKcensus_flows_lads <- UKcensus_flows_lads %>% 
+  bind_rows(NI_census_flows_lads %>% mutate(country='Northern Ireland'))
+
+ukoutline <- st_geometry(st_union(z[c(1:391),]))
+
+load('../census/CDE/CDE_ECensus.RData')
+load('../census/CDE/CDE_SCensus.RData')
+load('../census/CDE/CDE_WCensus.RData')
+load('../census/CDE/CDE_NICensus.RData')
+
+load('../census/CDE/CDE_ECensusphi1.RData')
+load('../census/CDE/CDE_SCensusphi1.RData')
+load('../census/CDE/CDE_WCensusphi1.RData')
+load('../census/CDE/CDE_NICensusphi1.RData')
+
+load('../census/CDE/CDE_ECensusphi2.RData')
+load('../census/CDE/CDE_SCensusphi2.RData')
+load('../census/CDE/CDE_WCensusphi2.RData')
+load('../census/CDE/CDE_NICensusphi2.RData')
+
+load('../census/CDE/CDE_ECensusphi3.RData')
+load('../census/CDE/CDE_SCensusphi3.RData')
+load('../census/CDE/CDE_WCensusphi3.RData')
+load('../census/CDE/CDE_NICensusphi3.RData')
+
+load('../census/CDE/CDE_ECensusphi4.RData')
+load('../census/CDE/CDE_SCensusphi4.RData')
+load('../census/CDE/CDE_WCensusphi4.RData')
+load('../census/CDE/CDE_NICensusphi4.RData')
+
+load('../census/CDE/CDE_ECensusphi5.RData')
+load('../census/CDE/CDE_SCensusphi5.RData')
+load('../census/CDE/CDE_WCensusphi5.RData')
+load('../census/CDE/CDE_NICensusphi5.RData')
+
+load('../census/CDP/CDP_ECensus.RData')
+load('../census/CDP/CDP_SCensus.RData')
+load('../census/CDP/CDP_WCensus.RData')
+load('../census/CDP/CDP_NICensus.RData')
+
+load('../census/CDP/CDP_ECensusphi1.RData')
+load('../census/CDP/CDP_SCensusphi1.RData')
+load('../census/CDP/CDP_WCensusphi1.RData')
+load('../census/CDP/CDP_NICensusphi1.RData')
+
+load('../census/CDP/CDP_ECensusphi2.RData')
+load('../census/CDP/CDP_SCensusphi2.RData')
+load('../census/CDP/CDP_WCensusphi2.RData')
+load('../census/CDP/CDP_NICensusphi2.RData')
+
+load('../census/CDP/CDP_ECensusphi3.RData')
+load('../census/CDP/CDP_SCensusphi3.RData')
+load('../census/CDP/CDP_WCensusphi3.RData')
+load('../census/CDP/CDP_NICensusphi3.RData')
+
+load('../census/CDP/CDP_ECensusphi4.RData')
+load('../census/CDP/CDP_SCensusphi4.RData')
+load('../census/CDP/CDP_WCensusphi4.RData')
+load('../census/CDP/CDP_NICensusphi4.RData')
+
+load('../census/CDP/CDP_ECensusphi5.RData')
+load('../census/CDP/CDP_SCensusphi5.RData')
+load('../census/CDP/CDP_WCensusphi5.RData')
+load('../census/CDP/CDP_NICensusphi5.RData')
+
+load('../census/CDO/CDO_ECensus.RData')
+load('../census/CDO/CDO_SCensus.RData')
+load('../census/CDO/CDO_WCensus.RData')
+load('../census/CDO/CDO_NICensus.RData')
+
+load('../census/CDO/CDO_ECensusphi1.RData')
+load('../census/CDO/CDO_SCensusphi1.RData')
+load('../census/CDO/CDO_WCensusphi1.RData')
+load('../census/CDO/CDO_NICensusphi1.RData')
+
+load('../census/CDO/CDO_ECensusphi2.RData')
+load('../census/CDO/CDO_SCensusphi2.RData')
+load('../census/CDO/CDO_WCensusphi2.RData')
+load('../census/CDO/CDO_NICensusphi2.RData')
+
+load('../census/CDO/CDO_ECensusphi3.RData')
+load('../census/CDO/CDO_SCensusphi3.RData')
+load('../census/CDO/CDO_WCensusphi3.RData')
+load('../census/CDO/CDO_NICensusphi3.RData')
+
+load('../census/CDO/CDO_ECensusphi4.RData')
+load('../census/CDO/CDO_SCensusphi4.RData')
+load('../census/CDO/CDO_WCensusphi4.RData')
+load('../census/CDO/CDO_NICensusphi4.RData')
+
+load('../census/CDO/CDO_ECensusphi5.RData')
+load('../census/CDO/CDO_SCensusphi5.RData')
+load('../census/CDO/CDO_WCensusphi5.RData')
+load('../census/CDO/CDO_NICensusphi5.RData')
+
+load('../census/ERadiation/ERad_ECensus.RData')
+load('../census/ERadiation/ERad_SCensus.RData')
+load('../census/ERadiation/ERad_WCensus.RData')
+load('../census/ERadiation/ERad_NICensus.RData')
+
+load('../census/ERadiation/ERad_ECensusphi1.RData')
+load('../census/ERadiation/ERad_SCensusphi1.RData')
+load('../census/ERadiation/ERad_WCensusphi1.RData')
+load('../census/ERadiation/ERad_NICensusphi1.RData')
+
+load('../census/ERadiation/ERad_ECensusphi2.RData')
+load('../census/ERadiation/ERad_SCensusphi2.RData')
+load('../census/ERadiation/ERad_WCensusphi2.RData')
+load('../census/ERadiation/ERad_NICensusphi2.RData')
+
+load('../census/ERadiation/ERad_ECensusphi3.RData')
+load('../census/ERadiation/ERad_SCensusphi3.RData')
+load('../census/ERadiation/ERad_WCensusphi3.RData')
+load('../census/ERadiation/ERad_NICensusphi3.RData')
+
+load('../census/ERadiation/ERad_ECensusphi4.RData')
+load('../census/ERadiation/ERad_SCensusphi4.RData')
+load('../census/ERadiation/ERad_WCensusphi4.RData')
+load('../census/ERadiation/ERad_NICensusphi4.RData')
+
+load('../census/ERadiation/ERad_ECensusphi5.RData')
+load('../census/ERadiation/ERad_SCensusphi5.RData')
+load('../census/ERadiation/ERad_WCensusphi5.RData')
+load('../census/ERadiation/ERad_NICensusphi5.RData')
+
+load('../census/Impedance/Imp_ECensus.RData')
+load('../census/Impedance/Imp_SCensus.RData')
+load('../census/Impedance/Imp_WCensus.RData')
+load('../census/Impedance/Imp_NICensus.RData')
+
+load('../census/Impedance/Imp_ECensusphi1.RData')
+load('../census/Impedance/Imp_SCensusphi1.RData')
+load('../census/Impedance/Imp_WCensusphi1.RData')
+load('../census/Impedance/Imp_NICensusphi1.RData')
+
+load('../census/Impedance/Imp_ECensusphi2.RData')
+load('../census/Impedance/Imp_SCensusphi2.RData')
+load('../census/Impedance/Imp_WCensusphi2.RData')
+load('../census/Impedance/Imp_NICensusphi2.RData')
+
+load('../census/Impedance/Imp_ECensusphi3.RData')
+load('../census/Impedance/Imp_SCensusphi3.RData')
+load('../census/Impedance/Imp_WCensusphi3.RData')
+load('../census/Impedance/Imp_NICensusphi3.RData')
+
+load('../census/Impedance/Imp_ECensusphi4.RData')
+load('../census/Impedance/Imp_SCensusphi4.RData')
+load('../census/Impedance/Imp_WCensusphi4.RData')
+load('../census/Impedance/Imp_NICensusphi4.RData')
+
+load('../census/Impedance/Imp_ECensusphi5.RData')
+load('../census/Impedance/Imp_SCensusphi5.RData')
+load('../census/Impedance/Imp_WCensusphi5.RData')
+load('../census/Impedance/Imp_NICensusphi5.RData')
+
+load('../census/Stoufer/Sto_ECensus.RData')
+load('../census/Stoufer/Sto_CSCensus.RData')
+load('../census/Stoufer/Sto_WCensus.RData')
+load('../census/Stoufer/Sto_NICensus.RData')
+
+load('../census/Stoufer/Sto_ECensusphi1.RData')
+load('../census/Stoufer/Sto_SCensusphi1.RData')
+load('../census/Stoufer/Sto_WCensusphi1.RData')
+load('../census/Stoufer/Sto_NICensusphi1.RData')
+
+load('../census/Stoufer/Sto_ECensusphi2.RData')
+load('../census/Stoufer/Sto_SCensusphi2.RData')
+load('../census/Stoufer/Sto_WCensusphi2.RData')
+load('../census/Stoufer/Sto_NICensusphi2.RData')
+
+load('../census/Stoufer/Sto_ECensusphi3.RData')
+load('../census/Stoufer/Sto_SCensusphi3.RData')
+load('../census/Stoufer/Sto_WCensusphi3.RData')
+load('../census/Stoufer/Sto_NICensusphi3.RData')
+
+load('../census/Stoufer/Sto_ECensusphi4.RData')
+load('../census/Stoufer/Sto_SCensusphi4.RData')
+load('../census/Stoufer/Sto_WCensusphi4.RData')
+load('../census/Stoufer/Sto_NICensusphi4.RData')
+
+load('../census/Stoufer/Sto_ECensusphi5.RData')
+load('../census/Stoufer/Sto_SCensusphi5.RData')
+load('../census/Stoufer/Sto_WCensusphi5.RData')
+load('../census/Stoufer/Sto_NICensusphi5.RData')
+
+load('../census/IO/IO_ECensus.RData')
+load('../census/IO/IO_CSCensus.RData')
+load('../census/IO/IO_WCensus.RData')
+load('../census/IO/IO_NICensus.RData')
+
+load('../census/IO/IO_ECensusphi1.RData')
+load('../census/IO/IO_SCensusphi1.RData')
+load('../census/IO/IO_WCensusphi1.RData')
+load('../census/IO/IO_NICensusphi1.RData')
+
+load('../census/IO/IO_ECensusphi2.RData')
+load('../census/IO/IO_SCensusphi2.RData')
+load('../census/IO/IO_WCensusphi2.RData')
+load('../census/IO/IO_NICensusphi2.RData')
+
+load('../census/IO/IO_ECensusphi3.RData')
+load('../census/IO/IO_SCensusphi3.RData')
+load('../census/IO/IO_WCensusphi3.RData')
+load('../census/IO/IO_NICensusphi3.RData')
+
+load('../census/IO/IO_ECensusphi4.RData')
+load('../census/IO/IO_SCensusphi4.RData')
+load('../census/IO/IO_WCensusphi4.RData')
+load('../census/IO/IO_NICensusphi4.RData')
+
+load('../census/IO/IO_ECensusphi5.RData')
+load('../census/IO/IO_SCensusphi5.RData')
+load('../census/IO/IO_WCensusphi5.RData')
+load('../census/IO/IO_NICensusphi5.RData')
+
+load('../../furthest_from_home_meta.RData')
+
+employment_freq <- furthest_from_home %>% select(employment_cat) %>% gather() %>% group_by(value) %>% count()
+
+furthest_from_home <- furthest_from_home %>% mutate(home_country=str_extract(home_lad,''),furthest_country=str_extract(furthest_lad,''),nextFreq_country = str_extract(nextFreq_lad,''))
+
+furthest_from_home <- furthest_from_home %>% mutate(home_country=factor(home_country,levels=c('E','W','S','N')),
+      furthest_country=factor(furthest_country,levels=c('E','W','S','N')),
+      nextFreq_country = factor(nextFreq_country,levels=c('E','W','S','N')))
+
+```
+
+# Data Sets
+
+We estimate and compare seven human mobility models (CDE, CDP, CDO, ERad, Imp, IO, Sto) to the 2011 census commuting flow data for England ($\Omega^{CE}$), Wales ($\Omega^{CW}$), Scotland ($\Omega^{S}$) and Northern Ireland ($\Omega^{NI}$). We estimate posterior distributions using hamiltonian MCMC (as implemented by the Stan package http://mc-stan.org/). To assess model fit and provide a basis for model selection we use approximate leave-one-out cross validation as implemented in the loo package (doi:10.1007/s11222-016-9696-4).
+
+```{r census flux, echo=FALSE, message=FALSE, fig.path='Figs/'}
+#1-326 English lads
+#327-337 NI lads
+#338-369 Scottish lads
+#370-391 Welsh lads
+
+ggplot(UKcensus_flows_lads,aes(x=from,y=to,fill=freq)) + 
+     geom_tile() + scale_fill_distiller(palette='Spectral',limits=c(1,1e6),trans='log10',breaks=c(1,1e1,1e2,1e3,1e4,1e5,1e6),labels=c(0,1,2,3,4,5,6),name='log10(count)') +  
+     theme(axis.ticks=element_blank(),axis.text=element_blank(),legend.position='bottom') + ggtitle('A') + 
+  annotate('rect',xmin=1,xmax=326,ymin=1,ymax=326,fill=NA,colour='black',linetype=1) +
+  annotate('rect',xmin=327,xmax=337,ymin=327,ymax=337,fill=NA,colour='black',linetype=2) +
+  annotate('rect',xmin=338,xmax=369,ymin=338,ymax=369,fill=NA,colour='blue',linetype=3) + 
+  annotate('rect',xmin=370,xmax=391,ymin=370,ymax=391,fill=NA,colour='red',linetype=4)
+```
+
+```{r census flux_map}
+
+n_commuters = UKcensus_flows_lads %>% group_by(from) %>% summarise(commuters=sum(freq))
+
+n_movers = UKcensus_flows_lads %>% filter(from!=to) %>% group_by(from) %>% summarise(commuters=sum(freq))
+
+z = lads_map %>% mutate(n_commuters = unlist(UKcensus_flows_lads %>% group_by(from) %>% summarise(commuters=sum(freq) ) %>% ungroup %>% select(commuters)),
+                        n_movers = unlist(UKcensus_flows_lads %>% filter(from!=to) %>% group_by(from) %>% summarise(commuters=sum(freq)) %>% ungroup %>% select(commuters)),
+                        p_move=n_movers/n_commuters)
+
+f2 = ggplot(st_sf(z[1:406,]),aes(fill=p_move)) + 
+  geom_sf(size=0.0) +
+  scale_fill_gradient2(name ='Prop. Move',midpoint=mean(BBCmoves_by_LAD$p_move),low=muted('blue'),high=muted('red')) +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) + 
+  theme(legend.position = "bottom") + 
+  theme(text = element_text(size=8)) + 
+  geom_sf(data=ukoutline,fill=NA,size=0.01) 
+
+f1 = ggplot(st_sf(z[1:406,]),aes(fill=m_commuters/TotPop)) + geom_sf(size=0.0) +
+  scale_fill_gradient2(name='Users (per capita)',midpoint=log10(mean(z$N/z$TotPop)),low=muted('blue'),high=muted('red'),trans='log10') +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) + 
+        theme(legend.position = "bottom") + 
+        theme(text = element_text(size=8)) + 
+        geom_sf(data=ukoutline,fill=NA,size=0.01) 
+
+f1+f2
+
+```
+
+
+## Systematic lack of fit to City of London and Westminster commuter flows
+
+A basic assumption of the human mobility models considered in this study is that commuter flows can be modelled based only on the spatial configuration of population density. This assumption breaks down for locations such as the City of London which have a comparatively small resident population but have an high density of workplaces, retail, recreational and other sites of interest. The exceptional nature of the City of London -- and the adjacent district of Westminster -- is evident from plotting the total influx and efflux of commuters for the English census data. Although there is some variation the vast majority of locations have an influx of commuters that roughly balances the efflux. In contrast the City of London and Westminster have influxs that are $\sim$ 150 and 10 times larger than their efflux (top left). Human mobility models based only on population density cannot represent such features of real commuting data leading to a systematic lack of fit which may bias parameter estimates. As such we treat these LADs as outliers and remove from the data sets used for model estimation and comparison. 
+
+```{r diagnose}
+source('PPDfuncs.R')
+load('./ERadiation/ERad_ECensus_all.RData')
+load('./CDO/CDO_ECensus_all.RData')
+
+ppCDO_all=ERadmatflux(Ecensus_mobility_dat,fitERad_CE_all,median=TRUE)
+
+post_check<-tibble(census_out=rowSums(Ecensus_mobility_dat$mv),census_in=colSums(Ecensus_mobility_dat$mv),CDO_in = colSums(ppCDO_all$mean),CDO_out = rowSums(ppCDO_all$mean),lad=lads_map$lad17nm[1:326])
+
+post_check$lad[!is.element(1:326,c(294,326))] = NA
+
+p1=ggplot(post_check,aes(x=census_in,y=census_out,label=lad)) + 
+  geom_point(color = ifelse(is.na(post_check$lad), "black", "red")) + 
+  xlab('Influx (Census)') + ylab('Eflux (Census)')+ geom_label_repel() 
+
+p2=ggplot(post_check,aes(x=CDO_in,y=CDO_out,label=lad)) + 
+  geom_point(color = ifelse(is.na(post_check$lad), "black", "red")) + 
+  xlab('Influx (CDO)') + ylab('Eflux (CDO)') + geom_label_repel() 
+
+p3=ggplot(post_check,aes(x=census_in,y=CDO_in,label=lad)) + 
+  geom_point(color = ifelse(is.na(post_check$lad), "black", "red")) + 
+  xlab('Influx (Census)') + ylab('Influx (CDO)') + geom_label_repel() 
+
+(p1+p2)/p3
+
+```
+
+As an illustration we compare estimated posterior distributions for the CDO gravity model estimated from the English census data both with (326 LADs) and without (324 LADs) the City of London and Westminster. The systematic lack of fit to these two LADs is responsible for a huge bias in all of the estimated gravity scaling parameters.
+
+```{r parameter_bias}
+post_compare <- fitCDO_CE_all %>% gather_draws(tau,rho,alpha,delta) %>% mutate(data='Census (E)',country='E',data='England (326 LADS)')
+post_compare <- post_compare %>% bind_rows(fitCDO_CE %>% gather_draws(tau,rho,alpha,delta) %>% mutate(data='Census (E)',country='E',data='England (324 LADS)'))
+
+post_compare <- post_compare %>% ungroup() %>% mutate(.variable = factor(.variable,levels=c('tau','rho','alpha','delta')))
+
+cred95 <- function(x){return(data.frame(y=median(x),ymin=quantile(x,c(0.025)),ymax=quantile(x,0.975)))}
+
+ggplot(post_compare,aes(x=data,y=.value)) + coord_flip() + stat_summary(fun.data=cred95,size=0.5, position = position_dodge(width=0.5)) + facet_wrap(~.variable,scales='free_x',labeller = label_parsed) + xlab('') + ylab('') + theme(legend.position = "none")
+```
+
+
+## PSIS diagnostic plots
+
+The approximate leave-one-out cross validation (LOO) method uses pareto smoothed importance sampling (PSIS-LOO) to efficiently estimate the predictive accuracy of a model (expected log pointwise predictive density, $\hat{elpd}$) and as a basis for model comparison and selection. The estimated shape parameter $\hat{k}$ can be used to judge the reliability of the estimate of $\hat{elpd}$ for each data point (or in our case for each LAD corresponding to a row of $\Omega_{ji}$). The estimate of $\hat{elpd}$ is considered reliable (quick convergence) for $\hat{k} < 0.5$, performance may still be reliable for values of $\hat{k}$ up to 0.7. Values of $\hat{k} > 0.7$ suggest that the data points are highly influential to the estimated posterior and potentially introducing bias. 
+
+After removal of the City of London and Westminster LADs from the English census data and the Highland LAD from the Scottish workflow data (for consistency with limitations of BBC data set) a set of 2-4 LADs still have values of $\hat{k} > 0.7$ for the three gravity-type mobility models (CDE,CDO,CDP).
+
+```{r psis_census,echo=FALSE, message=FALSE, fig.path='Figs/'}
+psis_compareC <- tibble(data='Census E (CDE)',lad_id=1:length(pareto_k_values(loo_CDE_CE)),pk=pareto_k_values(loo_CDE_CE))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census S (CDE)',
+                                                    lad_id=1:length(pareto_k_values(loo_CDE_CS)),
+                                                    pk=pareto_k_values(loo_CDE_CS)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census W (CDE)',
+                                                    lad_id=1:length(pareto_k_values(loo_CDE_CW)),
+                                                    pk=pareto_k_values(loo_CDE_CW)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census NI (CDE)',
+                                                    lad_id=1:length(pareto_k_values(loo_CDE_CNI)),
+                                                    pk=pareto_k_values(loo_CDE_CNI)))
+
+ggplot(psis_compareC,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+psis_compareC <- tibble(data='Census E (CDP)',lad_id=1:length(pareto_k_values(loo_CDP_CE)),pk=pareto_k_values(loo_CDP_CE))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census S (CDP)',
+                                                    lad_id=1:length(pareto_k_values(loo_CDP_CS)),
+                                                    pk=pareto_k_values(loo_CDP_CS)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census W (CDP)',
+                                                    lad_id=1:length(pareto_k_values(loo_CDP_CW)),
+                                                    pk=pareto_k_values(loo_CDP_CW)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census NI (CDP)',
+                                                    lad_id=1:length(pareto_k_values(loo_CDP_CNI)),
+                                                    pk=pareto_k_values(loo_CDP_CNI)))
+
+ggplot(psis_compareC,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+psis_compareC <- tibble(data='Census E (CDO)',lad_id=1:length(pareto_k_values(loo_CDO_CE)),pk=pareto_k_values(loo_CDO_CE))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census S (CDO)',
+                                                    lad_id=1:length(pareto_k_values(loo_CDO_CS)),
+                                                    pk=pareto_k_values(loo_CDO_CS)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census W (CDO)',
+                                                    lad_id=1:length(pareto_k_values(loo_CDO_CW)),
+                                                    pk=pareto_k_values(loo_CDO_CW)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census NI (CDO)',
+                                                    lad_id=1:length(pareto_k_values(loo_CDO_CNI)),
+                                                    pk=pareto_k_values(loo_CDO_CNI)))
+
+ggplot(psis_compareC,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+psis_compareC <- tibble(data='Census E (ERad)',lad_id=1:length(pareto_k_values(loo_ERad_CE)),pk=pareto_k_values(loo_ERad_CE))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census S (ERad)',
+                                                    lad_id=1:length(pareto_k_values(loo_ERad_CS)),
+                                                    pk=pareto_k_values(loo_ERad_CS)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census W (ERad)',
+                                                    lad_id=1:length(pareto_k_values(loo_ERad_CW)),
+                                                    pk=pareto_k_values(loo_ERad_CW)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census NI (ERad)',
+                                                    lad_id=1:length(pareto_k_values(loo_ERad_CNI)),
+                                                    pk=pareto_k_values(loo_ERad_CNI)))
+
+ggplot(psis_compareC,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+psis_compareC <- tibble(data='Census E (Imp)',lad_id=1:length(pareto_k_values(loo_Imp_CE)),pk=pareto_k_values(loo_Imp_CE))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census S (Imp)',
+                                                    lad_id=1:length(pareto_k_values(loo_Imp_CS)),
+                                                    pk=pareto_k_values(loo_Imp_CS)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census W (Imp)',
+                                                    lad_id=1:length(pareto_k_values(loo_Imp_CW)),
+                                                    pk=pareto_k_values(loo_Imp_CW)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census NI (Imp)',
+                                                    lad_id=1:length(pareto_k_values(loo_Imp_CNI)),
+                                                    pk=pareto_k_values(loo_Imp_CNI)))
+
+ggplot(psis_compareC,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+psis_compareC <- tibble(data='Census E (Stoufer)',lad_id=1:length(pareto_k_values(loo_Stoufer_CE)),pk=pareto_k_values(loo_Stoufer_CE))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census S (Stoufer)',
+                                                    lad_id=1:length(pareto_k_values(loo_Stoufer_CS)),
+                                                    pk=pareto_k_values(loo_Stoufer_CS)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census W (Stoufer)',
+                                                    lad_id=1:length(pareto_k_values(loo_Stoufer_CW)),
+                                                    pk=pareto_k_values(loo_Stoufer_CW)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census NI (Stoufer)',
+                                                    lad_id=1:length(pareto_k_values(loo_Stoufer_CNI)),
+                                                    pk=pareto_k_values(loo_Stoufer_CNI)))
+
+ggplot(psis_compareC,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+psis_compareC <- tibble(data='Census E (Stoufer)',lad_id=1:length(pareto_k_values(loo_Stoufer_CE)),pk=pareto_k_values(loo_Stoufer_CE))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census S (Stoufer)',
+                                                    lad_id=1:length(pareto_k_values(loo_Stoufer_CS)),
+                                                    pk=pareto_k_values(loo_Stoufer_CS)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census W (Stoufer)',
+                                                    lad_id=1:length(pareto_k_values(loo_Stoufer_CW)),
+                                                    pk=pareto_k_values(loo_Stoufer_CW)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census NI (Stoufer)',
+                                                    lad_id=1:length(pareto_k_values(loo_Stoufer_CNI)),
+                                                    pk=pareto_k_values(loo_Stoufer_CNI)))
+
+ggplot(psis_compareC,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+```
+
+Gravity models are notoriously sensitive to the contribution from high density locations, borne out by the clustering of LADS with high pareto shape parameters around London and other high population density areas. The shape parameter ($\phi$) of the negative binomial likelihood used for estimation controls the variance to mean scaling relationship with the variance for a mean flux $y$: $y + \frac{y^2}{\phi}$. Hence reducing the value of $\phi$ reduces the influence of larger populations (with larger population flux) to the likelihood. Hence, we carried out a sensitivity analysis fixing the value of $\phi$ and reducing the value until all LADS $\hat{k} < 0.7$. This was achieved for a fixed shape parameter of $\phi=0.1$.
+
+```{r psis_censusphi5,echo=FALSE, message=FALSE, fig.path='Figs/'}
+psis_compareC <- tibble(data='Census E (CDE)',lad_id=1:length(pareto_k_values(loo_CDE_CEphi1)),pk=pareto_k_values(loo_CDE_CEphi1))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census S (CDE)',
+                                                    lad_id=1:length(pareto_k_values(loo_CDE_CSphi1)),
+                                                    pk=pareto_k_values(loo_CDE_CSphi1)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census W (CDE)',
+                                                    lad_id=1:length(pareto_k_values(loo_CDE_CWphi1)),
+                                                    pk=pareto_k_values(loo_CDE_CWphi1)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census NI (CDE)',
+                                                    lad_id=1:length(pareto_k_values(loo_CDE_CNIphi1)),
+                                                    pk=pareto_k_values(loo_CDE_CNIphi1)))
+
+ggplot(psis_compareC,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+psis_compareC <- tibble(data='Census E (CDP)',lad_id=1:length(pareto_k_values(loo_CDP_CEphi1)),pk=pareto_k_values(loo_CDP_CEphi1))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census S (CDP)',
+                                                    lad_id=1:length(pareto_k_values(loo_CDP_CSphi1)),
+                                                    pk=pareto_k_values(loo_CDP_CSphi1)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census W (CDP)',
+                                                    lad_id=1:length(pareto_k_values(loo_CDP_CWphi1)),
+                                                    pk=pareto_k_values(loo_CDP_CWphi1)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census NI (CDP)',
+                                                    lad_id=1:length(pareto_k_values(loo_CDP_CNIphi1)),
+                                                    pk=pareto_k_values(loo_CDP_CNIphi1)))
+
+ggplot(psis_compareC,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+psis_compareC <- tibble(data='Census E (CDO)',lad_id=1:length(pareto_k_values(loo_CDO_CEphi1)),pk=pareto_k_values(loo_CDO_CEphi1))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census S (CDO)',
+                                                    lad_id=1:length(pareto_k_values(loo_CDO_CSphi1)),
+                                                    pk=pareto_k_values(loo_CDO_CSphi1)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census W (CDO)',
+                                                    lad_id=1:length(pareto_k_values(loo_CDO_CWphi1)),
+                                                    pk=pareto_k_values(loo_CDO_CWphi1)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census NI (CDO)',
+                                                    lad_id=1:length(pareto_k_values(loo_CDO_CNIphi1)),
+                                                    pk=pareto_k_values(loo_CDO_CNIphi1)))
+
+ggplot(psis_compareC,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+
+psis_compareC <- tibble(data='Census E (ERad)',lad_id=1:length(pareto_k_values(loo_ERad_CEphi1)),pk=pareto_k_values(loo_ERad_CEphi1))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census S (ERad)',
+                                                    lad_id=1:length(pareto_k_values(loo_ERad_CSphi1)),
+                                                    pk=pareto_k_values(loo_ERad_CSphi1)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census W (ERad)',
+                                                    lad_id=1:length(pareto_k_values(loo_ERad_CWphi1)),
+                                                    pk=pareto_k_values(loo_ERad_CWphi1)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census NI (ERad)',
+                                                    lad_id=1:length(pareto_k_values(loo_ERad_CNIphi1)),
+                                                    pk=pareto_k_values(loo_ERad_CNIphi1)))
+
+ggplot(psis_compareC,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+psis_compareC <- tibble(data='Census E (Imp)',lad_id=1:length(pareto_k_values(loo_Imp_CEphi1)),pk=pareto_k_values(loo_Imp_CEphi1))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census S (Imp)',
+                                                    lad_id=1:length(pareto_k_values(loo_Imp_CSphi1)),
+                                                    pk=pareto_k_values(loo_Imp_CSphi1)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census W (Imp)',
+                                                    lad_id=1:length(pareto_k_values(loo_Imp_CWphi1)),
+                                                    pk=pareto_k_values(loo_Imp_CWphi1)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census NI (Imp)',
+                                                    lad_id=1:length(pareto_k_values(loo_Imp_CNIphi1)),
+                                                    pk=pareto_k_values(loo_Imp_CNIphi1)))
+
+ggplot(psis_compareC,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+psis_compareC <- tibble(data='Census E (Stoufer)',lad_id=1:length(pareto_k_values(loo_Sto_CEphi1)),pk=pareto_k_values(loo_Sto_CEphi1))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census S (Stoufer)',
+                                                    lad_id=1:length(pareto_k_values(loo_Sto_CSphi1)),
+                                                    pk=pareto_k_values(loo_Sto_CSphi1)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census W (Stoufer)',
+                                                    lad_id=1:length(pareto_k_values(loo_Sto_CWphi1)),
+                                                    pk=pareto_k_values(loo_Sto_CWphi1)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census NI (Stoufer)',
+                                                    lad_id=1:length(pareto_k_values(loo_Sto_CNIphi1)),
+                                                    pk=pareto_k_values(loo_Sto_CNIphi1)))
+
+ggplot(psis_compareC,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+psis_compareC <- tibble(data='Census E (Stoufer)',lad_id=1:length(pareto_k_values(loo_Sto_CEphi1)),pk=pareto_k_values(loo_Sto_CEphi1))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census S (Stoufer)',
+                                                    lad_id=1:length(pareto_k_values(loo_Sto_CSphi1)),
+                                                    pk=pareto_k_values(loo_Sto_CSphi1)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census W (Stoufer)',
+                                                    lad_id=1:length(pareto_k_values(loo_Sto_CWphi1)),
+                                                    pk=pareto_k_values(loo_Sto_CWphi1)))
+psis_compareC <- psis_compareC %>% bind_rows(tibble(data='Census NI (Stoufer)',
+                                                    lad_id=1:length(pareto_k_values(loo_Sto_CNIphi1)),
+                                                    pk=pareto_k_values(loo_Sto_CNIphi1)))
+
+ggplot(psis_compareC,aes(x=lad_id,y=pk)) + geom_point(shape='+',size=2) + facet_wrap(~data,scales='free') + ylab('Pareto shape k') + xlab('LAD (Id)') + geom_hline(yintercept=0.0,linetype=2) + geom_hline(yintercept=0.5,col='red',linetype=3) + geom_hline(yintercept=0.7,col='red',linetype=2) + geom_hline(yintercept=1.0,col='red',linetype=1)
+
+```
+
+As below, fixing $\phi$ reduces the absolute values of the likelihood and predictive accuracy of all of the models but does not change the rank ordering of the mobility models (section below). Reducing $\phi$ increases the uncertainty but also systematically changes the estimated model parameters (illustrated for the Extended Radiation and CDO gravity models). Hence, as the posterior predictive accuracy as measured by CPC is higher for the model estimating $\phi$ we use these estimates to compare with the BBC data. 
+
+## Model comparison
+
+The difference between $\hat{elpd}$ for alternative models fitted to the same data provides a measure of their relative predictive accuracy. 
+
+```{r compare_models}
+
+lookup=array(c('CDE','CDP','CDO','ERad','IO','Imp','Sto'))
+
+row.names(lookup)<- c('model1','model2','model3','model4','model5','model6','model7')
+
+
+temp = loo_compare(loo_CDE_CE,loo_CDP_CE,loo_CDO_CE,loo_ERad_CE,loo_IO_CE,loo_Imp_CE,loo_Stoufer_CE)
+looC_df <- data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep=''))
+
+temp = loo_compare(loo_CDE_CW,loo_CDP_CW,loo_CDO_CW,loo_ERad_CW,loo_IO_CW,loo_Imp_CW,loo_Stoufer_CW)
+
+looC_df <- cbind(looC_df,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
+
+temp = loo_compare(loo_CDE_CS,loo_CDP_CS,loo_CDO_CS,loo_ERad_CS,loo_IO_CS,loo_Imp_CS,loo_Stoufer_CS)
+
+looC_df <- cbind(looC_df,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
+
+temp = loo_compare(loo_CDE_CNI,loo_CDP_CNI,loo_CDO_CNI,loo_ERad_CNI,loo_IO_CNI,loo_Imp_CNI,loo_Stoufer_CNI)
+
+looC_df <- cbind(looC_df,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
+
+
+print.xtable(looC_df,file = './textables/looCensus.tex')
+```
+
+```{r compare_models_fixphi}
+
+lookup=array(c('CDE','CDP','CDO','ERad','IO','Imp','Sto'))
+
+row.names(lookup)<- c('model1','model2','model3','model4','model5','model6','model7')
+
+
+temp = loo_compare(loo_CDE_CEphi1,loo_CDP_CEphi1,loo_CDO_CEphi1,loo_ERad_CEphi1,loo_IO_CEphi1,loo_Imp_CEphi1,loo_Sto_CEphi1)
+looC_df_fixphi <- data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep=''))
+
+temp = loo_compare(loo_CDE_CWphi1,loo_CDP_CWphi1,loo_CDO_CWphi1,loo_ERad_CWphi1,loo_IO_CWphi1,loo_Imp_CWphi1,loo_Sto_CWphi1)
+
+looC_df_fixphi <- cbind(looC_df_fixphi,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
+
+temp = loo_compare(loo_CDE_CSphi1,loo_CDP_CSphi1,loo_CDO_CSphi1,loo_ERad_CSphi1,loo_IO_CSphi1,loo_Imp_CSphi1,loo_Sto_CSphi1)
+
+looC_df_fixphi <- cbind(looC_df_fixphi,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
+
+temp = loo_compare(loo_CDE_CNIphi1,loo_CDP_CNIphi1,loo_CDO_CNIphi1,loo_ERad_CNIphi1,loo_IO_CNIphi1,loo_Imp_CNIphi1,loo_Sto_CNIphi1)
+
+looC_df_fixphi <- cbind(looC_df_fixphi,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
+
+
+print.xtable(looC_df_fixphi,file = './textables/looCensus_fixphi.tex')
+```
+
+# Posterior Predictive Distribution (CPC)
+
+```{r CPC, echo=FALSE,message=FALSE, fig.path='Figs/',fig.width=7, fig.height=7}
+
+load('CPCpost.RData')
+
+CPCpost_all <- CPCpost %>% mutate(phi='Estimated')
+
+```
+
+```{r CPC_phi1, echo=FALSE,message=FALSE, fig.path='Figs/',fig.width=7, fig.height=7}
+
+load('CPCpost_phi1.RData')
+
+CPCpost_all <- CPCpost_all %>% bind_rows(CPCpost %>% mutate(phi='0.1'))
+
+cred95 <- function(x){return(data.frame(y=median(x),ymin=quantile(x,c(0.025)),ymax=quantile(x,0.975)))}
+
+ggplot(CPCpost_all,aes(x=factor(model,levels=rev(c('ERad','CDO','CDP','IO','CDE','Imp','Sto'))),y=CPCpp,col=phi)) + coord_flip() + stat_summary(fun.data=cred95,size=0.25,position=position_dodge(width=0.5)) + facet_wrap(~factor(data,levels=c('England Census','Wales Census', 'NI Census', 'Scotland Census'))) + xlab('Mobility Model') + ylab('CPC (Posterior Predictive Distribution)') + theme(text = element_text(size=8)) + theme(legend.position = "none") 
+
+cred95 <- function(x){return(data.frame(y=median(x),ymin=quantile(x,c(0.025)),ymax=quantile(x,0.975)))}
+
+ggplot(CPCpost_all,aes(x=factor(model,levels=rev(c('ERad','CDO','CDP','IO','CDE','Imp','Sto'))),y=CPCm,col=phi)) + coord_flip() + stat_summary(fun.data=cred95,size=0.25,position=position_dodge(width=0.5)) + facet_wrap(~factor(data,levels=c('England Census','Wales Census', 'NI Census', 'Scotland Census'))) + xlab('Mobility Model') + ylab('CPC (Posterior Predictive Distribution)') + theme(text = element_text(size=8)) + theme(legend.position = "none") 
+
+
+```
+
+## Posterior Estimates (Extended Radiation Model)
+
+```{r erestimates, echo=FALSE,message=FALSE, fig.path='Figs/',fig.width=5, fig.height=5/2.5}
+post_compare <- fitERad_CE %>% gather_draws(alpha) %>% mutate(data='Census (E)',country='E',phi='Estimated')
+post_compare <- post_compare %>% bind_rows(fitERad_CEphi5 %>% gather_draws(alpha) %>% mutate(data='Census (E)',country='E',phi='0.5'))
+post_compare <- post_compare %>% bind_rows(fitERad_CEphi4 %>% gather_draws(alpha) %>% mutate(data='Census (E)',country='E',phi='0.4'))
+post_compare <- post_compare %>% bind_rows(fitERad_CEphi3 %>% gather_draws(alpha) %>% mutate(data='Census (E)',country='E',phi='0.3'))
+post_compare <- post_compare %>% bind_rows(fitERad_CEphi2 %>% gather_draws(alpha) %>% mutate(data='Census (E)',country='E',phi='0.2'))
+post_compare <- post_compare %>% bind_rows(fitERad_CEphi1 %>% gather_draws(alpha) %>% mutate(data='Census (E)',country='E',phi='0.1'))
+
+post_compare <- post_compare %>% bind_rows(fitERad_CW %>% gather_draws(alpha) %>% mutate(data='Census (W)',country='W',phi='Estimated'))
+post_compare <- post_compare %>% bind_rows(fitERad_CWphi5 %>% gather_draws(alpha) %>% mutate(data='Census (W)',country='W',phi='0.5'))
+post_compare <- post_compare %>% bind_rows(fitERad_CWphi4 %>% gather_draws(alpha) %>% mutate(data='Census (W)',country='W',phi='0.4'))
+post_compare <- post_compare %>% bind_rows(fitERad_CWphi3 %>% gather_draws(alpha) %>% mutate(data='Census (W)',country='W',phi='0.3'))
+post_compare <- post_compare %>% bind_rows(fitERad_CWphi2 %>% gather_draws(alpha) %>% mutate(data='Census (W)',country='W',phi='0.2'))
+post_compare <- post_compare %>% bind_rows(fitERad_CWphi1 %>% gather_draws(alpha) %>% mutate(data='Census (W)',country='W',phi='0.1'))
+
+post_compare <- post_compare %>% bind_rows(fitERad_CNI %>% gather_draws(alpha) %>% mutate(data='Census (NI)',country='NI',phi='Estimated'))
+post_compare <- post_compare %>% bind_rows(fitERad_CNIphi5 %>% gather_draws(alpha) %>% mutate(data='Census (NI)',country='NI',phi='0.5'))
+post_compare <- post_compare %>% bind_rows(fitERad_CNIphi4 %>% gather_draws(alpha) %>% mutate(data='Census (NI)',country='NI',phi='0.4'))
+post_compare <- post_compare %>% bind_rows(fitERad_CNIphi3 %>% gather_draws(alpha) %>% mutate(data='Census (NI)',country='NI',phi='0.3'))
+post_compare <- post_compare %>% bind_rows(fitERad_CNIphi2 %>% gather_draws(alpha) %>% mutate(data='Census (NI)',country='NI',phi='0.2'))
+post_compare <- post_compare %>% bind_rows(fitERad_CNIphi1 %>% gather_draws(alpha) %>% mutate(data='Census (NI)',country='NI',phi='0.1'))
+
+post_compare <- post_compare %>% bind_rows(fitERad_CS %>% gather_draws(alpha) %>% mutate(data='Census (S)',country='S',phi='Estimated'))
+post_compare <- post_compare %>% bind_rows(fitERad_CSphi5 %>% gather_draws(alpha) %>% mutate(data='Census (S)',country='S',phi='0.5'))
+post_compare <- post_compare %>% bind_rows(fitERad_CSphi4 %>% gather_draws(alpha) %>% mutate(data='Census (S)',country='S',phi='0.4'))
+post_compare <- post_compare %>% bind_rows(fitERad_CSphi3 %>% gather_draws(alpha) %>% mutate(data='Census (S)',country='S',phi='0.3'))
+post_compare <- post_compare %>% bind_rows(fitERad_CSphi2 %>% gather_draws(alpha) %>% mutate(data='Census (S)',country='S',phi='0.2'))
+post_compare <- post_compare %>% bind_rows(fitERad_CSphi1 %>% gather_draws(alpha) %>% mutate(data='Census (S)',country='S',phi='0.1'))
+
+post_compare <- post_compare %>% ungroup() %>% mutate(.variable = factor(.variable,levels=c('alpha')))
+
+post_compare <- post_compare %>% mutate(data = factor(data,level=rev(c('BBC Total (UK)','Census (E)', 'BBC Total (E)', 'Census (S)','BBC Total (S)','Census (W)', 'BBC Total (W)','Census (NI)','BBC Total (NI)'))))
+
+cred95 <- function(x){return(data.frame(y=median(x),ymin=quantile(x,c(0.025)),ymax=quantile(x,0.975)))}
+
+ggplot(post_compare %>% filter(country=='E'),aes(x=phi,y=.value,col=country)) + coord_flip() + stat_summary(fun.data=cred95,size=0.5, position = position_dodge(width=0.5)) + facet_wrap(~.variable,scales='free') + xlab(expression(phi)) + ylab(expression(alpha)) + theme(legend.position = "none") 
+
+```
+
+## Posterior Estimates (Favoured model - Competing Destinations (Offset))
+
+```{r cdostimates, echo=FALSE, fig.height=5*0.75, fig.path='Figs/', fig.width=5, message=FALSE}
+post_compare <- fitCDO_CE %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (E)',country='E',phi='Estimated')
+post_compare <- post_compare %>% bind_rows(fitCDO_CEphi5 %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (E)',country='E',phi='0.5'))
+post_compare <- post_compare %>% bind_rows(fitCDO_CEphi4 %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (E)',country='E',phi='0.4'))
+post_compare <- post_compare %>% bind_rows(fitCDO_CEphi3 %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (E)',country='E',phi='0.3'))
+post_compare <- post_compare %>% bind_rows(fitCDO_CEphi2 %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (E)',country='E',phi='0.2'))
+post_compare <- post_compare %>% bind_rows(fitCDO_CEphi1 %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (E)',country='E',phi='0.1'))
+
+post_compare <- post_compare %>% bind_rows(fitCDO_CS %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (S)',country='S',phi='Estimated'))
+post_compare <- post_compare %>% bind_rows(fitCDO_CSphi5 %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (S)',country='S',phi='0.5'))
+post_compare <- post_compare %>% bind_rows(fitCDO_CSphi4 %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (S)',country='S',phi='0.4'))
+post_compare <- post_compare %>% bind_rows(fitCDO_CSphi3 %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (S)',country='S',phi='0.3'))
+post_compare <- post_compare %>% bind_rows(fitCDO_CSphi2 %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (S)',country='S',phi='0.2'))
+post_compare <- post_compare %>% bind_rows(fitCDO_CSphi1 %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (S)',country='S',phi='0.1'))
+
+post_compare <- post_compare %>% bind_rows(fitCDO_CW %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (W)',country='W',phi='Estimated'))
+post_compare <- post_compare %>% bind_rows(fitCDO_CWphi5 %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (W)',country='W',phi='0.5'))
+post_compare <- post_compare %>% bind_rows(fitCDO_CWphi4 %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (W)',country='W',phi='0.4'))
+post_compare <- post_compare %>% bind_rows(fitCDO_CWphi3 %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (W)',country='W',phi='0.3'))
+post_compare <- post_compare %>% bind_rows(fitCDO_CWphi2 %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (W)',country='W',phi='0.2'))
+post_compare <- post_compare %>% bind_rows(fitCDO_CWphi1 %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (W)',country='W',phi='0.1'))
+
+post_compare <- post_compare %>% bind_rows(fitCDO_CNI %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (NI)',country='NI',phi='Estimated'))
+post_compare <- post_compare %>% bind_rows(fitCDO_CNIphi5 %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (NI)',country='NI',phi='0.5'))
+post_compare <- post_compare %>% bind_rows(fitCDO_CNIphi4 %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (NI)',country='NI',phi='0.4'))
+post_compare <- post_compare %>% bind_rows(fitCDO_CNIphi3 %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (NI)',country='NI',phi='0.3'))
+post_compare <- post_compare %>% bind_rows(fitCDO_CNIphi2 %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (NI)',country='NI',phi='0.2'))
+post_compare <- post_compare %>% bind_rows(fitCDO_CNIphi1 %>% gather_draws(tau,rho,delta,alpha) %>% mutate(data='Census (NI)',country='NI',phi='0.1'))
+
+ggplot(post_compare %>% filter(country=='E'),aes(x=phi,y=.value)) + coord_flip() + stat_summary(fun.data=cred95,size=0.5, position = position_dodge(width=0.5)) + facet_wrap(~.variable,scales='free',labeller=label_parsed) + xlab(expression(phi)) + ylab(expression(alpha)) + theme(legend.position = "none") 
+
+```
+

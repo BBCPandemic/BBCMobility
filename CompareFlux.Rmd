@@ -1,0 +1,255 @@
+---
+title: "Compare Predicted Flux"
+author: "Andrew J K Conlan"
+date: "03/05/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,cache=TRUE)
+```
+
+
+```{r load, echo=FALSE,message=FALSE}
+require(sf)
+require(reshape2)
+require(tidyverse)
+require(ggplot2)
+require(rstan)
+require(loo)
+require(viridis)
+require(tidybayes)
+require(patchwork)
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+
+load('./flux/mobility_flux_next.RData')
+#load('./flux/census_flux.RData')
+
+load('census/CDO/CDO_ECensus.RData')
+load('census/CDO/CDO_WCensus.RData')
+load('census/CDO/CDO_SCensus.RData')
+load('census/CDO/CDO_NICensus.RData')
+
+load('next/CDO/subnational/E_CDOTotal.RData')
+load('next/CDO/subnational/W_CDOTotal.RData')
+load('next/CDO/subnational/S_CDOTotal.RData')
+load('next/CDO/subnational/NI_CDOTotal.RData')
+
+fit_E_CDOTNext = fit_E_CDOT
+fit_W_CDOTNext = fit_W_CDOT
+fit_S_CDOTNext = fit_S_CDOT
+fit_NI_CDOTNext = fit_NI_CDOT
+
+load('furthest/CDO/subnational/E_CDOTotal.RData')
+load('furthest/CDO/subnational/W_CDOTotal.RData')
+load('furthest/CDO/subnational/S_CDOTotal.RData')
+load('furthest/CDO/subnational/NI_CDOTotal.RData')
+
+fit_E_CDOTFurthest = fit_E_CDOT
+fit_W_CDOTFurthest = fit_W_CDOT
+fit_S_CDOTFurthest = fit_S_CDOT
+fit_NI_CDOTFurthest = fit_NI_CDOT
+
+load('next/CDO/uk/CDOTotal.RData')
+load('next/CDO/uk/CDOUnder18.RData')
+load('next/CDO/uk/CDOEducation.RData')
+load('next/CDO/uk/CDOEmployed.RData')
+load('next/CDO/uk/CDONEET.RData')
+
+fitCDOTNext = fitCDOT
+fitCDOUNext = fitCDOU
+fitCDOEdNext = fitCDOEd
+fitCDOEmNext = fitCDOEm
+fitCDONNext = fitCDON
+
+load('next/CDO/age/CDO18_30.RData')
+load('next/CDO/age/CDO30_60.RData')
+load('next/CDO/age/CDO60_100.RData')
+
+fitCDO18_30Next = fitCDO18_30
+fitCDO30_60Next = fitCDO30_60
+fitCDO60_100Next = fitCDO60_100
+
+load('furthest/CDO/uk/CDOTotal.RData')
+load('furthest/CDO/uk/CDOUnder18.RData')
+load('furthest/CDO/uk/CDOEducation.RData')
+load('furthest/CDO/uk/CDOEmployed.RData')
+load('furthest/CDO/uk/CDONEET.RData')
+
+fitCDOTFurthest = fitCDOT
+fitCDOUFurthest = fitCDOU
+fitCDOEdFurthest = fitCDOEd
+fitCDOEmFurthest = fitCDOEm
+fitCDONFurthest = fitCDON
+
+load('furthest/CDO/age/CDO18_30.RData')
+load('furthest/CDO/age/CDO30_60.RData')
+load('furthest/CDO/age/CDO60_100.RData')
+
+fitCDO18_30Furthest = fitCDO18_30
+fitCDO30_60Furthest = fitCDO30_60
+fitCDO60_100Furthest = fitCDO60_100
+
+source('./next/PPDfuncs.R')
+
+CPCpp <- function(mobility_data,fit1,fit2,model1,model2, flux_function)
+{
+
+x<-(t(sapply(1:100,function(i){
+  oot1 <- flux_function(mobility_data,fit1,FALSE,TRUE,NA)
+  oot2 <- flux_function(mobility_data,fit2,FALSE,TRUE,NA)
+  cbind(CPC(oot1$mean,oot2$mean),CPC(oot1$sample,oot2$sample))
+})))
+
+
+return(tibble(model1=model1,model2=model2,sample=1:dim(x)[1],CPCm=as.numeric(x[,1]),CPCpp=as.numeric(x[,2])))
+}
+
+```
+
+```{r figures, echo=FALSE,message=FALSE, fig.path='CPCFigs/', fig.width=5, fig.height = 5*0.75}
+
+CPCcmp_measure <- CPCpp(E_total_mobility_dat,
+                 fitCDO_CE,fit_E_CDOTNext,
+                 'Census (E)','Next',
+                 CDOmatflux)
+
+CPCcmp_measure <- CPCcmp_measure %>% bind_rows(CPCpp(E_total_mobility_dat,
+                 fitCDO_CE,fit_E_CDOTFurthest,
+                 'Census (E)','Furthest',
+                 CDOmatflux))
+
+CPCcmp_measure <- CPCcmp_measure %>% bind_rows(CPCpp(S_total_mobility_dat,
+                 fitCDO_CS,fit_S_CDOTNext,
+                 'Census (S)','Next',
+                 CDOmatflux))
+
+CPCcmp_measure <- CPCcmp_measure %>% bind_rows(CPCpp(S_total_mobility_dat,
+                 fitCDO_CS,fit_S_CDOTFurthest,
+                 'Census (S)','Furthest',
+                 CDOmatflux))
+
+CPCcmp_measure <- CPCcmp_measure %>% bind_rows(CPCpp(W_total_mobility_dat,
+                 fitCDO_CW,fit_W_CDOTNext,
+                 'Census (W)','Next',
+                 CDOmatflux))
+
+CPCcmp_measure <- CPCcmp_measure %>% bind_rows(CPCpp(W_total_mobility_dat,
+                 fitCDO_CW,fit_W_CDOTFurthest,
+                 'Census (W)','Furthest',
+                 CDOmatflux))
+
+CPCcmp_measure <- CPCcmp_measure %>% bind_rows(CPCpp(NI_total_mobility_dat,
+                 fitCDO_CNI,fit_NI_CDOTNext,
+                 'Census (NI)','Next',
+                 CDOmatflux))
+
+CPCcmp_measure <- CPCcmp_measure %>% bind_rows(CPCpp(NI_total_mobility_dat,
+                 fitCDO_CNI,fit_NI_CDOTFurthest,
+                 'Census (NI)','Furthest',
+                 CDOmatflux))
+
+cred95 <- function(x){return(data.frame(y=median(x),ymin=quantile(x,c(0.025)),ymax=quantile(x,0.975)))}
+ggplot(CPCcmp_measure,aes(x=factor(model2,levels=c('Next','Furthest')),y=CPCm)) + coord_flip() + stat_summary(fun.data=cred95,size=0.5) + xlab('Measure for Origin Destination Matrix') + ylab('CPC with Census Model') + facet_wrap(~factor(model1,levels=c('Census (E)','Census (W)','Census (S)','Census (NI)')))
+
+```
+
+```{r figures2, echo=FALSE,message=FALSE, fig.path='CPCFigs/', fig.width=5, fig.height = 5*0.5}
+
+
+CPCcmp_measureEm <- bind_cols(CPCpp(total_mobility_dat,
+                 fitCDO_CE,fitCDOTNext,
+                 'Census (E)','Next',
+                 CDOmatflux),category=rep('BBC Total',100))
+
+CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
+                 fitCDO_CE,fitCDOTFurthest,
+                 'Census (E)','Furthest',
+                 CDOmatflux),category=rep('BBC Total',100)))
+
+CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
+                 fitCDO_CE,fitCDOUNext,
+                 'Census (E)','Next',
+                 CDOmatflux),category=rep('BBC Under 18',100)))
+
+
+CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
+                 fitCDO_CE,fitCDOUFurthest,
+                 'Census (E)','Furthest',
+                 CDOmatflux),category=rep('BBC Under 18',100)))
+
+CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
+                 fitCDO_CE,fitCDOEdNext,
+                 'Census (E)','Next',
+                 CDOmatflux),category=rep('BBC Education',100)))
+
+CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
+                 fitCDO_CE,fitCDOEdFurthest,
+                 'Census (E)','Furthest',
+                 CDOmatflux),category=rep('BBC Education',100)))
+
+CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
+                 fitCDO_CE,fitCDO18_30Next,
+                 'Census (E)','Next',
+                 CDOmatflux),category=rep('BBC 18-30',100)))
+
+
+CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
+                 fitCDO_CE,fitCDO18_30Furthest,
+                 'Census (E)','Furthest',
+                 CDOmatflux),category=rep('BBC 18-30',100)))
+
+
+CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
+                 fitCDO_CE,fitCDOEmNext,
+                 'Census (E)','Next',
+                 CDOmatflux),category=rep('BBC Employed',100)))
+
+CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
+                 fitCDO_CE,fitCDOEmFurthest,
+                 'Census (E)','Furthest',
+                 CDOmatflux),category=rep('BBC Employed',100)))
+
+CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
+                 fitCDO_CE,fitCDO30_60Next,
+                 'Census (E)','Next',
+                 CDOmatflux),category=rep('BBC 30-60',100)))
+
+
+CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
+                 fitCDO_CE,fitCDO30_60Furthest,
+                 'Census (E)','Furthest',
+                 CDOmatflux),category=rep('BBC 30-60',100)))
+
+CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
+                 fitCDO_CE,fitCDONNext,
+                 'Census (E)','Next',
+                 CDOmatflux),category=rep('BBC NEET',100)))
+
+CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
+                 fitCDO_CE,fitCDONFurthest,
+                 'Census (E)','Furthest',
+                 CDOmatflux),category=rep('BBC NEET',100)))
+
+CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
+                 fitCDO_CE,fitCDO60_100Next,
+                 'Census (E)','Next',
+                 CDOmatflux),category=rep('BBC 60-100',100)))
+
+
+CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
+                 fitCDO_CE,fitCDO60_100Furthest,
+                 'Census (E)','Furthest',
+                 CDOmatflux),category=rep('BBC 60-100',100)))
+
+ggplot(CPCcmp_measureEm,aes(x=factor(category,levels=rev(c('BBC Total','BBC Employed','BBC 30-60','BBC Education','BBC 18-30','BBC NEET','BBC 60-100','BBC Under 18'))),y=CPCm)) + coord_flip() + stat_summary(fun.data=cred95,size=0.5) + xlab('') + ylab('CPC with Census (E) Model') + facet_wrap(~ factor(model2,levels=c('Next','Furthest')))
+
+
+  
+```
+
+
+
