@@ -260,7 +260,7 @@ print(BBCagemoves)
 
 but also by LAD. 
 
-```{r flux_by_lads ,echo=FALSE,message=FALSE,fig.path='Figs/',fig.width=7, fig.height=7*1.75}
+```{r flux_by_lads ,echo=FALSE,message=FALSE,fig.path='Figs/',fig.width=7, fig.height=7*1.5}
 
 census_N = UKcensus_flows_lads %>% group_by(from) %>% summarise(commuters=sum(freq))
 census_commuters = UKcensus_flows_lads %>% filter(from!=to) %>% group_by(from) %>% summarise(commuters=sum(freq))
@@ -280,8 +280,9 @@ f2 = ggplot(st_sf(zm[1:406,]),aes(fill=p_move)) +
         axis.text.y=element_blank(),
         axis.ticks.y=element_blank()) + 
   theme(legend.position = "bottom") + 
-  theme(text = element_text(size=8)) + 
-  geom_sf(data=ukoutline,fill=NA,size=0.01) 
+  #theme(text = element_text(size=8)) + 
+  geom_sf(data=ukoutline,fill=NA,size=0.01) +
+        ggtitle('A')
 
 f1 = ggplot(st_sf(zm[1:406,]),aes(fill=N/TotPop)) + geom_sf(size=0.0) +
   scale_fill_gradient2(name='Users (per capita)',midpoint=log10(mean(zm$N/zm$TotPop)),low=muted('blue'),high=muted('red'),trans='log10') +
@@ -290,10 +291,11 @@ f1 = ggplot(st_sf(zm[1:406,]),aes(fill=N/TotPop)) + geom_sf(size=0.0) +
         axis.text.y=element_blank(),
         axis.ticks.y=element_blank()) + 
         theme(legend.position = "bottom") + 
-        theme(text = element_text(size=8)) + 
-        geom_sf(data=ukoutline,fill=NA,size=0.01) 
+        #theme(text = element_text(size=8)) + 
+        geom_sf(data=ukoutline,fill=NA,size=0.01) +
+        ggtitle('A')
 
-df=tibble(census_p_move=zm$census_p_move,p_move=zm$p_move)
+df=tibble(census_p_move=zm$census_p_move,p_move=zm$p_move,N=lads_map$TotPop,A=lads_map$AreaKm2)
 
 summary(lm(df$p_move ~ df$census_p_move))
 
@@ -301,15 +303,20 @@ print(confint(lm(df$p_move ~ df$census_p_move)))
 
 g1=ggplot(df,aes(x=census_p_move,y=p_move)) + geom_point() + 
   geom_smooth(method='lm',se=FALSE) + 
-  stat_poly_eq(formula = df$p_move ~ df$census_p_move,
-               eq.with.lhs = "italic(p[BBC])~`=`~",
-               eq.x.rhs = "~italic(p[C])",
-               aes(label = paste(..eq.label.., ..rr.label.., sep = "*plain(\",\")~")),
-               parse = TRUE) +
+  # stat_poly_eq(formula = df$p_move ~ df$census_p_move,
+  #              eq.with.lhs = "italic(p[BBC])~`=`~",
+  #              eq.x.rhs = "~italic(p[C])",
+  #              aes(label = paste(..eq.label.., ..rr.label.., sep = "*plain(\",\")~")),
+  #              parse = TRUE) +
   labs(y=expression(italic(p[BBC])),x=expression(italic(p[C]))) + 
-  annotate("text",x=df$census_p_move[c(294,329)]+c(0.15,0.1),y=df$p_move[c(294,329)],label=c('City of London','Belfast'))
+  annotate("text",x=df$census_p_move[c(294,329)]+c(0.15,0.1),y=df$p_move[c(294,329)],label=c('City of London','Belfast')) +
+  ggtitle('D')
 
-(f2+g1)
+g2=ggplot(df,aes(x=N,y=p_move)) + geom_point() + xlab('Population Size') + ylab(expression(italic(p[BBC]))) + scale_x_log10() + ggtitle('B')
+
+g3=ggplot(df,aes(x=A,y=p_move)) + geom_point() + xlab(expression('Area km'^"2")) + ylab(expression(italic(p[BBC]))) + scale_x_log10() + ggtitle('C')
+
+f2 + (g2+g3)/g1
 
 ```
 
@@ -317,7 +324,7 @@ A linear regression of $p_{BBC}$ against $p_{C}$ demonstrates a strong linear re
 
 The coverage of the BBC mobility data set - with a median of 81 users per LAD (range 2-948) - means for the majority of LADS the raw data is too sparse to estimate movement rates for each strata of the BBC model. To address this, we estimate a generalised linear model (with logit link and random effects at the LAD level) to model the per LAD probability of moving and how this is adjusted for each strata (age or employment status). We estimate the random effects models using the lme4 package.
 
-\[ p_{BBC} \sim~ group + (1 | LAD) \]
+\[ p_{BBC} \sim group + (1 | LAD) \]
 
 
 ```{r age_ran_effect,echo=FALSE,message=FALSE,fig.path='Figs/',fig.width=7, fig.height=7}
@@ -353,6 +360,9 @@ age_df <- age_df %>% mutate(pred_m1r_stderr = apply(bb$t, 2, sd))
 
 ggplot(age_df,aes(x=LAD,y=pred_m1r,ymin=pred_m1r-pred_m1r_stderr,ymax=pred_m1r+pred_m1r_stderr)) + geom_point(position=position_dodge(1)) + geom_errorbar() + facet_wrap(~group) + ylab('Probability of Move')
 
+ggplot(age_df,aes(x=move/N,y=pred_m1r,ymin=pred_m1r-pred_m1r_stderr,ymax=pred_m1r+pred_m1r_stderr,size=N)) + geom_point(alpha=0.2) + facet_wrap(~group) + geom_errorbar(size=0.1,alpha=0.2) + ylab('Probability of Move') + geom_abline()
+
+
 write.csv(age_df,file='../imputed_flux/moveProbByAgeLADS_next.csv')
 ```
 
@@ -377,7 +387,7 @@ fe_conf <- exp(confint(m2r,method='Wald'))
 
 print(emp_or<-tibble(group=c('Education','Employed','NEET'),or=paste(round(fe[2:4],2),' (',round(fe_conf[3:5,1],2),',',round(fe_conf[3:5,2],2),')',sep='')))
 
-emp_df <- emp_df %>% mutate(pred_m2r=predict(m1r,type='response'))
+emp_df <- emp_df %>% mutate(pred_m2r=predict(m2r,type='response'))
 emp_df <- emp_df %>% mutate(group=factor(group,levels=c('Under 18', 'Education','Employed','NEET')))
 
 predFun <- function(fit) {
@@ -388,6 +398,8 @@ bb <- bootMer(m2r,nsim=100,FUN=predFun, use.u = FALSE)
 emp_df <- emp_df %>% mutate(pred_m2r_stderr = apply(bb$t, 2, sd))
 
 ggplot(emp_df,aes(x=LAD,y=pred_m2r,ymin=pred_m2r-pred_m2r_stderr,ymax=pred_m2r+pred_m2r_stderr)) + geom_point(position=position_dodge(1)) + geom_errorbar() + facet_wrap(~group) + ylab('Probability of Move')
+
+ggplot(emp_df,aes(x=move/N,y=pred_m2r,ymin=pred_m2r-pred_m2r_stderr,ymax=pred_m2r+pred_m2r_stderr ,size=N)) + geom_point(alpha=0.2) + facet_wrap(~group) + geom_errorbar(size=0.1,alpha=0.2) + ylab('Probability of Move') + geom_abline()
 
 write.csv(emp_df,file='../imputed_flux/moveProbByEmpLADS_next.csv')
 ```

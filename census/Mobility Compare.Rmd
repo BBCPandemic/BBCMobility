@@ -38,7 +38,7 @@ UKcensus_flows_lads <- UKcensus_flows_lads %>%
 UKcensus_flows_lads <- UKcensus_flows_lads %>% 
   bind_rows(NI_census_flows_lads %>% mutate(country='Northern Ireland'))
 
-ukoutline <- st_geometry(st_union(z[c(1:391),]))
+ukoutline <- st_geometry(st_union(lads_map[c(1:391),]))
 
 load('../census/CDE/CDE_ECensus.RData')
 load('../census/CDE/CDE_SCensus.RData')
@@ -281,29 +281,24 @@ ggplot(UKcensus_flows_lads,aes(x=from,y=to,fill=freq)) +
   annotate('rect',xmin=370,xmax=391,ymin=370,ymax=391,fill=NA,colour='red',linetype=4)
 ```
 
-```{r census flux_map}
+```{r census flux_map, fig.path='Figs/'}
 
 n_commuters = UKcensus_flows_lads %>% group_by(from) %>% summarise(commuters=sum(freq))
 
 n_movers = UKcensus_flows_lads %>% filter(from!=to) %>% group_by(from) %>% summarise(commuters=sum(freq))
 
+summary <- n_commuters %>% inner_join(n_movers,by='from')
+
+summary <- summary %>% mutate(country=substr(from,1,1))
+
+summary <- summary %>% group_by(country) %>% summarise(users=sum(commuters.x),movers=sum(commuters.y),p_move=movers/users)
+
 z = lads_map %>% mutate(n_commuters = unlist(UKcensus_flows_lads %>% group_by(from) %>% summarise(commuters=sum(freq) ) %>% ungroup %>% select(commuters)),
                         n_movers = unlist(UKcensus_flows_lads %>% filter(from!=to) %>% group_by(from) %>% summarise(commuters=sum(freq)) %>% ungroup %>% select(commuters)),
                         p_move=n_movers/n_commuters)
 
-f2 = ggplot(st_sf(z[1:406,]),aes(fill=p_move)) + 
-  geom_sf(size=0.0) +
-  scale_fill_gradient2(name ='Prop. Move',midpoint=mean(BBCmoves_by_LAD$p_move),low=muted('blue'),high=muted('red')) +
-  theme(axis.text.x=element_blank(),
-        axis.ticks.x=element_blank(),
-        axis.text.y=element_blank(),
-        axis.ticks.y=element_blank()) + 
-  theme(legend.position = "bottom") + 
-  theme(text = element_text(size=8)) + 
-  geom_sf(data=ukoutline,fill=NA,size=0.01) 
-
-f1 = ggplot(st_sf(z[1:406,]),aes(fill=m_commuters/TotPop)) + geom_sf(size=0.0) +
-  scale_fill_gradient2(name='Users (per capita)',midpoint=log10(mean(z$N/z$TotPop)),low=muted('blue'),high=muted('red'),trans='log10') +
+f1 = ggplot(st_sf(z[1:406,]),aes(fill=p_move)) + geom_sf(size=0.0) +
+  scale_fill_gradient2(name='Users (per capita)',midpoint=log10(mean(z$p_move)),low=muted('blue'),high=muted('red'),trans='log10') +
   theme(axis.text.x=element_blank(),
         axis.ticks.x=element_blank(),
         axis.text.y=element_blank(),
@@ -312,16 +307,22 @@ f1 = ggplot(st_sf(z[1:406,]),aes(fill=m_commuters/TotPop)) + geom_sf(size=0.0) +
         theme(text = element_text(size=8)) + 
         geom_sf(data=ukoutline,fill=NA,size=0.01) 
 
-f1+f2
+f1
+
+summary
+
 
 ```
+
+
+
 
 
 ## Systematic lack of fit to City of London and Westminster commuter flows
 
 A basic assumption of the human mobility models considered in this study is that commuter flows can be modelled based only on the spatial configuration of population density. This assumption breaks down for locations such as the City of London which have a comparatively small resident population but have an high density of workplaces, retail, recreational and other sites of interest. The exceptional nature of the City of London -- and the adjacent district of Westminster -- is evident from plotting the total influx and efflux of commuters for the English census data. Although there is some variation the vast majority of locations have an influx of commuters that roughly balances the efflux. In contrast the City of London and Westminster have influxs that are $\sim$ 150 and 10 times larger than their efflux (top left). Human mobility models based only on population density cannot represent such features of real commuting data leading to a systematic lack of fit which may bias parameter estimates. As such we treat these LADs as outliers and remove from the data sets used for model estimation and comparison. 
 
-```{r diagnose}
+```{r diagnose, fig.path='Figs/'}
 source('PPDfuncs.R')
 load('./ERadiation/ERad_ECensus_all.RData')
 load('./CDO/CDO_ECensus_all.RData')
@@ -350,7 +351,7 @@ p3=ggplot(post_check,aes(x=census_in,y=CDO_in,label=lad)) +
 
 As an illustration we compare estimated posterior distributions for the CDO gravity model estimated from the English census data both with (326 LADs) and without (324 LADs) the City of London and Westminster. The systematic lack of fit to these two LADs is responsible for a huge bias in all of the estimated gravity scaling parameters.
 
-```{r parameter_bias}
+```{r parameter_bias, fig.path='Figs/'}
 post_compare <- fitCDO_CE_all %>% gather_draws(tau,rho,alpha,delta) %>% mutate(data='Census (E)',country='E',data='England (326 LADS)')
 post_compare <- post_compare %>% bind_rows(fitCDO_CE %>% gather_draws(tau,rho,alpha,delta) %>% mutate(data='Census (E)',country='E',data='England (324 LADS)'))
 
