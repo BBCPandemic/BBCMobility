@@ -100,10 +100,59 @@ load('../census/CDP/CDP_SCensusphi5.RData')
 load('../census/CDP/CDP_WCensusphi5.RData')
 load('../census/CDP/CDP_NICensusphi5.RData')
 
+load('../census/CDOR/CDO_ECensus.RData')
+
+loo_CDOR_CE = loo_CDO_CE
+fitCDOR_CE = fitCDO_CE
+log_likCDOR_CE = log_likCDO_CE
+
+load('../census/CDOR/CDO_SCensus.RData')
+
+loo_CDOR_CS = loo_CDO_CS
+fitCDOR_CS = fitCDO_CS
+log_likCDOR_CS = log_likCDO_CS
+
+load('../census/CDOR/CDO_WCensus.RData')
+
+loo_CDOR_CW = loo_CDO_CW
+fitCDOR_CW = fitCDO_CW
+log_likCDOR_CW = log_likCDO_CW
+
+load('../census/CDOR/CDO_NICensus.RData')
+
+loo_CDOR_CNI = loo_CDO_CNI
+fitCDOR_CNI = fitCDO_CNI
+log_likCDOR_CNI = log_likCDO_CNI
+
+
 load('../census/CDO/CDO_ECensus.RData')
 load('../census/CDO/CDO_SCensus.RData')
 load('../census/CDO/CDO_WCensus.RData')
 load('../census/CDO/CDO_NICensus.RData')
+
+load('../census/CDOR/CDO_ECensusphi1.RData')
+loo_CDOR_CEphi1 = loo_CDO_CEphi1
+fitCDOR_CEphi1 = fitCDO_CEphi1
+log_likCDOR_CEphi1 = log_likCDO_CEphi1
+
+load('../census/CDOR/CDO_SCensusphi1.RData')
+
+loo_CDOR_CSphi1 = loo_CDO_CSphi1
+fitCDOR_CSphi1 = fitCDO_CSphi1
+log_likCDOR_CSphi1 = log_likCDO_CSphi1
+
+load('../census/CDOR/CDO_WCensusphi1.RData')
+
+loo_CDOR_CWphi1 = loo_CDO_CWphi1
+fitCDOR_CWphi1 = fitCDO_CWphi1
+log_likCDOR_CWphi1 = log_likCDO_CWphi1
+
+load('../census/CDOR/CDO_NICensusphi1.RData')
+
+loo_CDOR_CNIphi1 = loo_CDO_CNIphi1
+fitCDOR_CNIphi1 = fitCDO_CNIphi1
+log_likCDOR_CNIphi1 = log_likCDO_CNIphi1
+
 
 load('../census/CDO/CDO_ECensusphi1.RData')
 load('../census/CDO/CDO_SCensusphi1.RData')
@@ -568,23 +617,23 @@ The difference between $\hat{elpd}$ for alternative models fitted to the same da
 
 ```{r compare_models}
 
-lookup=array(c('CDE','CDP','CDO','ERad','IO','Imp','Sto'))
+lookup=array(c('CDE','CDP','CDO','CDOR','ERad','IO','Imp','Sto'))
 
-row.names(lookup)<- c('model1','model2','model3','model4','model5','model6','model7')
+row.names(lookup)<- c('model1','model2','model3','model4','model5','model6','model7','model8')
 
 
-temp = loo_compare(loo_CDE_CE,loo_CDP_CE,loo_CDO_CE,loo_ERad_CE,loo_IO_CE,loo_Imp_CE,loo_Stoufer_CE)
+temp = loo_compare(loo_CDE_CE,loo_CDP_CE,loo_CDO_CE,loo_CDOR_CE,loo_ERad_CE,loo_IO_CE,loo_Imp_CE,loo_Stoufer_CE)
 looC_df <- data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep=''))
 
-temp = loo_compare(loo_CDE_CW,loo_CDP_CW,loo_CDO_CW,loo_ERad_CW,loo_IO_CW,loo_Imp_CW,loo_Stoufer_CW)
+temp = loo_compare(loo_CDE_CW,loo_CDP_CW,loo_CDO_CW,loo_CDOR_CW,loo_ERad_CW,loo_IO_CW,loo_Imp_CW,loo_Stoufer_CW)
 
 looC_df <- cbind(looC_df,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
 
-temp = loo_compare(loo_CDE_CS,loo_CDP_CS,loo_CDO_CS,loo_ERad_CS,loo_IO_CS,loo_Imp_CS,loo_Stoufer_CS)
+temp = loo_compare(loo_CDE_CS,loo_CDP_CS,loo_CDO_CS,loo_CDOR_CS,loo_ERad_CS,loo_IO_CS,loo_Imp_CS,loo_Stoufer_CS)
 
 looC_df <- cbind(looC_df,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
 
-temp = loo_compare(loo_CDE_CNI,loo_CDP_CNI,loo_CDO_CNI,loo_ERad_CNI,loo_IO_CNI,loo_Imp_CNI,loo_Stoufer_CNI)
+temp = loo_compare(loo_CDE_CNI,loo_CDP_CNI,loo_CDO_CNI,loo_CDOR_CNI,loo_ERad_CNI,loo_IO_CNI,loo_Imp_CNI,loo_Stoufer_CNI)
 
 looC_df <- cbind(looC_df,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
 
@@ -594,23 +643,23 @@ print.xtable(looC_df,file = './textables/looCensus.tex')
 
 ```{r compare_models_fixphi}
 
-lookup=array(c('CDE','CDP','CDO','ERad','IO','Imp','Sto'))
+lookup=array(c('CDE','CDP','CDO','CDOR','ERad','IO','Imp','Sto'))
 
-row.names(lookup)<- c('model1','model2','model3','model4','model5','model6','model7')
+row.names(lookup)<- c('model1','model2','model3','model4','model5','model6','model7','model8')
 
 
-temp = loo_compare(loo_CDE_CEphi1,loo_CDP_CEphi1,loo_CDO_CEphi1,loo_ERad_CEphi1,loo_IO_CEphi1,loo_Imp_CEphi1,loo_Sto_CEphi1)
+temp = loo_compare(loo_CDE_CEphi1,loo_CDP_CEphi1,loo_CDO_CEphi1,loo_CDOR_CEphi1,loo_ERad_CEphi1,loo_IO_CEphi1,loo_Imp_CEphi1,loo_Sto_CEphi1)
 looC_df_fixphi <- data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep=''))
 
-temp = loo_compare(loo_CDE_CWphi1,loo_CDP_CWphi1,loo_CDO_CWphi1,loo_ERad_CWphi1,loo_IO_CWphi1,loo_Imp_CWphi1,loo_Sto_CWphi1)
+temp = loo_compare(loo_CDE_CWphi1,loo_CDP_CWphi1,loo_CDO_CWphi1,loo_CDOR_CWphi1,loo_ERad_CWphi1,loo_IO_CWphi1,loo_Imp_CWphi1,loo_Sto_CWphi1)
 
 looC_df_fixphi <- cbind(looC_df_fixphi,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
 
-temp = loo_compare(loo_CDE_CSphi1,loo_CDP_CSphi1,loo_CDO_CSphi1,loo_ERad_CSphi1,loo_IO_CSphi1,loo_Imp_CSphi1,loo_Sto_CSphi1)
+temp = loo_compare(loo_CDE_CSphi1,loo_CDP_CSphi1,loo_CDO_CSphi1,loo_CDOR_CSphi1,loo_ERad_CSphi1,loo_IO_CSphi1,loo_Imp_CSphi1,loo_Sto_CSphi1)
 
 looC_df_fixphi <- cbind(looC_df_fixphi,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
 
-temp = loo_compare(loo_CDE_CNIphi1,loo_CDP_CNIphi1,loo_CDO_CNIphi1,loo_ERad_CNIphi1,loo_IO_CNIphi1,loo_Imp_CNIphi1,loo_Sto_CNIphi1)
+temp = loo_compare(loo_CDE_CNIphi1,loo_CDP_CNIphi1,loo_CDO_CNIphi1,loo_CDOR_CNIphi1,loo_ERad_CNIphi1,loo_IO_CNIphi1,loo_Imp_CNIphi1,loo_Sto_CNIphi1)
 
 looC_df_fixphi <- cbind(looC_df_fixphi,data.frame(model=as.vector(lookup[names(temp[,1])]),elpd=paste(signif(temp[,1],3), ' (',signif(temp[,2],2),')',sep='')))
 

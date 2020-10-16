@@ -812,6 +812,10 @@ post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (
 summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
 
 print.xtable(summary_df,file = './textables/CDOsubnational.tex')
+write.csv(post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% arrange(data,.variable) %>% 
+select(data,.variable,median,lower,upper),file = './csvtables/CDOsubnational.csv',row.names = F)
+
+
 
 post_compare <- fitCDOT %>% gather_draws(tau,rho,delta,alpha,phi) %>% mutate(data='BBC Total (UK)',clevel='Ref')
 post_compare <- post_compare %>% bind_rows(fitCDOU %>% gather_draws(tau,rho,delta,alpha,phi) %>% mutate(data='BBC Under 18 (UK)',clevel='Cmp'))
@@ -836,7 +840,8 @@ summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=med
 
 
 print.xtable(summary_df,file = './textables/CDOBBC.tex')
-
+write.csv(post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% arrange(data,.variable) %>% 
+select(data,.variable,median,lower,upper),file = './csvtables/CDOBBC.csv',row.names = F )
 ```
 
 ## Posterior Estimates (CDE)
@@ -867,6 +872,8 @@ post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (
 summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
 
 print.xtable(summary_df,file = './textables/CDEsubnational.tex')
+write.csv(post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% arrange(data,.variable) %>% 
+select(data,.variable,median,lower,upper),file = './csvtables/CDEsubnational.csv',row.names=F)
 
 post_compare <- fitCDET %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Total (UK)',clevel='Ref')
 post_compare <- post_compare %>% bind_rows(fitCDEU %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Under 18 (UK)',clevel='Cmp'))
@@ -890,7 +897,8 @@ post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (
 summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
 
 print.xtable(summary_df,file = './textables/CDEBBC.tex')
-
+write.csv(post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% arrange(data,.variable) %>% 
+select(data,.variable,median,lower,upper),file = './csvtables/CDEBBC.csv',row.names=F)
 ```
 
 ## Posterior Estimates (CDP)
@@ -920,6 +928,8 @@ post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (
 summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
 
 print.xtable(summary_df,file = './textables/CDPsubnational.tex')
+write.csv(post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% arrange(data,.variable) %>% 
+select(data,.variable,median,lower,upper),file = './csvtables/CDPsubnational.csv',row.names=F)
 
 post_compare <- fitCDPT %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Total (UK)',clevel='Ref')
 post_compare <- post_compare %>% bind_rows(fitCDPU %>% gather_draws(tau,rho,delta,phi) %>% mutate(data='BBC Under 18 (UK)',clevel='Cmp'))
@@ -943,7 +953,8 @@ post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (
 summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
 
 print.xtable(summary_df,file = './textables/CDPBBC.tex')
-
+write.csv(post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% arrange(data,.variable) %>% 
+select(data,.variable,median,lower,upper),file = './csvtables/CDPBBC.csv',row.names=F)
 ```
 
 ## Posterior Estimates (ERad)
@@ -975,6 +986,9 @@ post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (
 summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
 
 print.xtable(summary_df,file = './textables/ERadsubnational.tex')
+write.csv(post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% arrange(data,.variable) %>% 
+select(data,.variable,median,lower,upper),file = './csvtables/ERadsubnational.csv',row.names=F)
+
 
 post_compare <- fitERadT %>% gather_draws(alpha,phi) %>% mutate(data='BBC Total (UK)',clevel='Ref')
 post_compare <- post_compare %>% bind_rows(fitERadU %>% gather_draws(alpha,phi) %>% mutate(data='BBC Under 18 (UK)',clevel='Cmp'))
@@ -1002,6 +1016,8 @@ post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (
 summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
 
 print.xtable(summary_df,file = './textables/ERadBBC.tex')
+write.csv(post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% arrange(data,.variable) %>% 
+select(data,.variable,median,lower,upper),file = './csvtables/ERadBBC.csv',row.names=F)
 
 ```
 
@@ -1033,6 +1049,8 @@ post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (
 summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
 
 print.xtable(summary_df,file = './textables/Stosubnational.tex')
+write.csv(post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% arrange(data,.variable) %>% 
+select(data,.variable,median,lower,upper),file = './csvtables/Stosubnational.csv',row.names=F)
 
 post_compare <- fitStoT %>% gather_draws(tau,phi) %>% mutate(data='BBC Total (UK)',clevel='Ref')
 post_compare <- post_compare %>% bind_rows(fitStoU %>% gather_draws(tau,phi) %>% mutate(data='BBC Under 18 (UK)',clevel='Cmp'))
@@ -1056,6 +1074,8 @@ post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (
 summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
 
 print.xtable(summary_df,file = './textables/StoBBC.tex')
+write.csv(post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% arrange(data,.variable) %>% 
+select(data,.variable,median,lower,upper),file = './csvtables/StoBBC.csv',row.names=F)
 ```
 
 
@@ -1093,6 +1113,8 @@ post_compare <- post_compare %>% mutate(.variable= fct_recode(.variable,'log10(g
 summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
 
 print.xtable(summary_df,file = './textables/IOsubnational.tex')
+write.csv(post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% arrange(data,.variable) %>% 
+select(data,.variable,median,lower,upper),file = './csvtables/IOsubnational.csv',row.names=F)
 
 post_compare <- fitIOT %>% gather_draws(gamma,phi) %>% mutate(data='BBC Total (UK)',clevel='Ref')
 post_compare <- post_compare %>% bind_rows(fitIOU %>% gather_draws(gamma,phi) %>% mutate(data='BBC Under 18 (UK)',clevel='Cmp'))
@@ -1119,7 +1141,8 @@ post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (
 summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
 
 print.xtable(summary_df,file = './textables/IOBBC.tex')
-
+write.csv(post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% arrange(data,.variable) %>% 
+select(data,.variable,median,lower,upper),file = './csvtables/IOBBC.csv',row.names=F)
 ```
 
 ## Posterior Estimates (Imp)
@@ -1150,6 +1173,8 @@ summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=med
 
 
 print.xtable(summary_df,file = './textables/Impsubnational.tex')
+write.csv(post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% arrange(data,.variable) %>% 
+select(data,.variable,median,lower,upper),file = './csvtables/Impsubnational.csv',row.names=F)
 
 post_compare <- fitImpT %>% gather_draws(phi) %>% mutate(data='BBC Total (UK)',clevel='Ref')
 post_compare <- post_compare %>% bind_rows(fitImpU %>% gather_draws(phi) %>% mutate(data='BBC Under 18 (UK)',clevel='Cmp'))
@@ -1172,7 +1197,8 @@ post_compare <- post_compare %>% mutate(data = factor(data,level=(c('BBC Total (
 summary_df <- post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% mutate(estimate=paste(round(median,3),' (',round(lower,2),',',round(upper,2),')',sep='')) %>% select(.variable,data,estimate) %>% spread(.variable,estimate)
 
 print.xtable(summary_df,file = './textables/ImpBBC.tex')
-
+write.csv(post_compare %>% group_by(.variable,data) %>% summarise(median=median(.value),lower=quantile(.value,0.025),upper=quantile(.value,0.975)) %>% arrange(data,.variable) %>% 
+select(data,.variable,median,lower,upper),file = './csvtables/ImpBBC.csv',row.names=F)
 
 ```
 

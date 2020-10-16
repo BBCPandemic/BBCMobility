@@ -308,13 +308,13 @@ g1=ggplot(df,aes(x=census_p_move,y=p_move)) + geom_point() +
   #              eq.x.rhs = "~italic(p[C])",
   #              aes(label = paste(..eq.label.., ..rr.label.., sep = "*plain(\",\")~")),
   #              parse = TRUE) +
-  labs(y=expression(italic(p[BBC])),x=expression(italic(p[C]))) + 
+  labs(y='p(BBC)',x='p(Census)') + 
   annotate("text",x=df$census_p_move[c(294,329)]+c(0.15,0.1),y=df$p_move[c(294,329)],label=c('City of London','Belfast')) +
   ggtitle('D')
 
-g2=ggplot(df,aes(x=N,y=p_move)) + geom_point() + xlab('Population Size') + ylab(expression(italic(p[BBC]))) + scale_x_log10() + ggtitle('B')
+g2=ggplot(df,aes(x=N,y=p_move)) + geom_point() + xlab('Population Size') + ylab('p(BBC)') + scale_x_log10() + ggtitle('B')
 
-g3=ggplot(df,aes(x=A,y=p_move)) + geom_point() + xlab(expression('Area km'^"2")) + ylab(expression(italic(p[BBC]))) + scale_x_log10() + ggtitle('C')
+g3=ggplot(df,aes(x=A,y=p_move)) + geom_point() + xlab(expression('Area km'^"2")) + ylab('p(BBC)') + scale_x_log10() + ggtitle('C')
 
 f2 + (g2+g3)/g1
 
