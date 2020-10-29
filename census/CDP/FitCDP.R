@@ -8,7 +8,7 @@ options(mc.cores = parallel::detectCores())
 load('../../flux/census_flux.RData')
 
 # Patch data sets to remove outlier LADS
-source('../../DropLADSCensus.R')
+source('../DropLADSCensus.R')
 
 
 fitCDP_CS <- stan(file = '../../stan/CDPnegbin.stan',
