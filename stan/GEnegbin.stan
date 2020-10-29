@@ -12,7 +12,7 @@ data {
 parameters{
   real<lower=0,upper=5> tau;
   real<lower=0,upper=1000> rho;
-  real<lower=0,upper=5> phi;
+  real<lower=0,upper=100> phi;
 }
 
 model {

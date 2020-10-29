@@ -12,7 +12,7 @@ data {
 
 parameters{
   real<lower=0,upper=1> alpha;
-  real<lower=0,upper=5> phi;
+  real<lower=0,upper=100> phi;
 }
 
 model {

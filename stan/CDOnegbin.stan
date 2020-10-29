@@ -14,7 +14,7 @@ parameters{
   real<lower=0,upper=1000> rho;
   real<lower=0,upper=10> alpha;
   real<lower=-5,upper=5> delta;
-  real<lower=0,upper=5>  phi;
+  real<lower=0,upper=100>  phi;
 }
 
 

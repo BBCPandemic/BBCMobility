@@ -7,6 +7,9 @@ options(mc.cores = parallel::detectCores())
 
 load('../../flux/census_flux.RData')
 
+# Patch data sets to remove outlier LADS
+source('../../DropLADSCensus.R')
+
 fitERad_CS <- stan(file = '../../stan/ERadnegbin.stan',
                          data = scotland_census_mobility_dat,
                          iter = 2000, chains = 4)

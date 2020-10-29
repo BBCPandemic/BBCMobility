@@ -1,12 +1,12 @@
-CDPmatflux <- function(mobility_data,fit,median=FALSE,post_flux=TRUE,pmove=NA)
+# Returns conditional movement matrix with rows indexing "from"
+# columns indexing "to"
+CDPmovemat <- function(mobility_data,fit,median=FALSE)
 {
   N = mobility_data$N
   r = mobility_data$r
-  flux = mobility_data$flux
+  
   post <- fit %>% spread_draws(tau,rho,delta,phi)
   y = numeric(length(N))
-  
-  if(!post_flux){if(is.na(pmove[1])){flux=rep(1,length(flux))}else{flux=pmove*N}}
   
   if(median){ post <- post %>% summarise(tau=median(tau),rho=median(rho),delta=median(delta),phi=median(phi));
   }else
@@ -45,22 +45,22 @@ CDPmatflux <- function(mobility_data,fit,median=FALSE,post_flux=TRUE,pmove=NA)
       normalise[j] = normalise[j] + theta[j,i];
     }
     
-    theta[j,] = flux[j]*theta[j,]/normalise[j]
+    theta[j,] = theta[j,]/normalise[j]
     mv[j,] = rnbinom(length(N),mu=theta[j,],size = phi)
   }
   
   return(list(mean=theta,sample=mv))
 }
 
-CDOmatflux <- function(mobility_data,fit,median=FALSE,post_flux=TRUE,pmove=NA)
+# Returns conditional movement matrix with rows indexing "from"
+# columns indexing "to"
+CDOmovemat <- function(mobility_data,fit,median=FALSE)
 {
   N = mobility_data$N
   r = mobility_data$r
-  flux = mobility_data$flux
+
   post <- fit %>% spread_draws(tau,rho,delta,alpha,phi)
   y = numeric(length(N))
-  
-  if(!post_flux){if(is.na(pmove[1])){flux=rep(1,length(flux))}else{flux=pmove*N}}
   
   if(median){ post <- post %>% summarise(tau=median(tau),rho=median(rho),delta=median(delta),alpha=median(alpha),phi=median(phi));
   }else
@@ -100,22 +100,23 @@ CDOmatflux <- function(mobility_data,fit,median=FALSE,post_flux=TRUE,pmove=NA)
       normalise[j] = normalise[j] + theta[j,i];
     }
     
-    theta[j,] = flux[j]*theta[j,]/normalise[j]
+    theta[j,] = theta[j,]/normalise[j]
     mv[j,] = rnbinom(length(N),mu=theta[j,],size = phi)
   }
   
   return(list(mean=theta,sample=mv))
 }
 
-CDEmatflux <- function(mobility_data,fit,median=FALSE,post_flux=TRUE,pmove=NA)
+# Returns conditional movement matrix with rows indexing "from"
+# columns indexing "to"
+CDEmovemat <- function(mobility_data,fit,median=FALSE)
 {
   N = mobility_data$N
   r = mobility_data$r
-  flux = mobility_data$flux
+  
   post <- fit %>% spread_draws(tau,rho,delta,phi)
   y = numeric(length(N))
   
-  if(!post_flux){if(is.na(pmove[1])){flux=rep(1,length(flux))}else{flux=pmove*N}}
   
   if(median){ post <- post %>% summarise(tau=median(tau),rho=median(rho),delta=median(delta),phi=median(phi));
   }else
@@ -154,22 +155,22 @@ CDEmatflux <- function(mobility_data,fit,median=FALSE,post_flux=TRUE,pmove=NA)
       normalise[j] = normalise[j] + theta[j,i];
     }
     
-    theta[j,] = flux[j]*theta[j,]/normalise[j]
+    theta[j,] = theta[j,]/normalise[j]
     mv[j,] = rnbinom(length(N),mu=theta[j,],size = phi)
   }
   
   return(list(mean=theta,sample=mv))
 }
 
-GPmatflux <- function(mobility_data,fit,median=FALSE,post_flux=TRUE,pmove=NA)
+# Returns conditional movement matrix with rows indexing "from"
+# columns indexing "to"
+GPmovemat <- function(mobility_data,fit,median=FALSE)
 {
   N = mobility_data$N
   r = mobility_data$r
-  flux = mobility_data$flux
+  
   post <- fit %>% spread_draws(tau,rho,phi)
   y = numeric(length(N))
-  
-  if(!post_flux){if(is.na(pmove[1])){flux=rep(1,length(flux))}else{flux=pmove*N}}
   
   if(median){ post <- post %>% summarise(tau=median(tau),rho=median(rho),phi=median(phi));
   }else
@@ -195,22 +196,21 @@ GPmatflux <- function(mobility_data,fit,median=FALSE,post_flux=TRUE,pmove=NA)
       normalise[j] = normalise[j] + theta[j,i];
     }
     
-    theta[j,] = flux[j]*theta[j,]/normalise[j]
+    theta[j,] = theta[j,]/normalise[j]
     mv[j,] = rnbinom(length(N),mu=theta[j,],size = phi)
   }
   
   return(list(mean=theta,sample=mv))
 }
-
-CDOmatflux <- function(mobility_data,fit,median=FALSE,post_flux=TRUE,pmove=NA)
+# Returns conditional movement matrix with rows indexing "from"
+# columns indexing "to"
+CDOmovemat <- function(mobility_data,fit,median=FALSE)
 {
   N = mobility_data$N
   r = mobility_data$r
-  flux = mobility_data$flux
+  
   post <- fit %>% spread_draws(tau,rho,delta,alpha,phi)
   y = numeric(length(N))
-  
-  if(!post_flux){if(is.na(pmove[1])){flux=rep(1,length(flux))}else{flux=pmove*N}}
   
   if(median){ post <- post %>% summarise(tau=median(tau),rho=median(rho),delta=median(delta),alpha=median(alpha),phi=median(phi));
   }else
@@ -250,22 +250,21 @@ CDOmatflux <- function(mobility_data,fit,median=FALSE,post_flux=TRUE,pmove=NA)
       normalise[j] = normalise[j] + theta[j,i];
     }
     
-    theta[j,] = flux[j]*theta[j,]/normalise[j]
+    theta[j,] = theta[j,]/normalise[j]
     mv[j,] = rnbinom(length(N),mu=theta[j,],size = phi)
   }
   
   return(list(mean=theta,sample=mv))
 }
-
-CDEmatflux <- function(mobility_data,fit,median=FALSE,post_flux=TRUE,pmove=NA)
+# Returns conditional movement matrix with rows indexing "from"
+# columns indexing "to"
+CDEmovemat <- function(mobility_data,fit,median=FALSE)
 {
   N = mobility_data$N
   r = mobility_data$r
-  flux = mobility_data$flux
+
   post <- fit %>% spread_draws(tau,rho,delta,phi)
   y = numeric(length(N))
-  
-  if(!post_flux){if(is.na(pmove[1])){flux=rep(1,length(flux))}else{flux=pmove*N}}
   
   if(median){ post <- post %>% summarise(tau=median(tau),rho=median(rho),delta=median(delta),phi=median(phi));
   }else
@@ -304,26 +303,23 @@ CDEmatflux <- function(mobility_data,fit,median=FALSE,post_flux=TRUE,pmove=NA)
       normalise[j] = normalise[j] + theta[j,i];
     }
     
-    theta[j,] = flux[j]*theta[j,]/normalise[j]
+    theta[j,] = theta[j,]/normalise[j]
     mv[j,] = rnbinom(length(N),mu=theta[j,],size = phi)
   }
   
   return(list(mean=theta,sample=mv))
 }
 
-
-Impmatflux <- function(mobility_data,fit,median=FALSE,post_flux=TRUE,pmove=NA)
+# Returns conditional movement matrix with rows indexing "from"
+# columns indexing "to"
+Impmovemat <- function(mobility_data,fit,median=FALSE)
 {
   
   N = mobility_data$N
   r = mobility_data$r
-  flux = mobility_data$flux
   post <- fit %>% spread_draws(phi)
   y = numeric(length(N))
-  
-  if(!post_flux){if(is.na(pmove[1])){flux=rep(1,length(flux))}else{flux=pmove*N}}
-  
-  
+
   if(median){ post <- post %>% summarise(phi=median(phi)) ;
   }else
   {post <- sample_n(post,1)}
@@ -347,24 +343,22 @@ Impmatflux <- function(mobility_data,fit,median=FALSE,post_flux=TRUE,pmove=NA)
       normalise[j] = normalise[j] + theta[j,i];
     }
     
-    theta[j,] = flux[j]*theta[j,]/normalise[j]
+    theta[j,] = theta[j,]/normalise[j]
     mv[j,] = rnbinom(length(N),mu=theta[j,],size = phi)
   }
   
   return(list(mean=theta,sample=mv))
 }
 
-
-ERadmatflux <- function(mobility_data,fit,median=FALSE,post_flux=TRUE,pmove=NA)
+# Returns conditional movement matrix with rows indexing "from"
+# columns indexing "to"
+ERadmovemat <- function(mobility_data,fit,median=FALSE)
 {
   N = mobility_data$N
   r = mobility_data$r
-  flux = mobility_data$flux
   s = mobility_data$s
   post <- fit %>% spread_draws(alpha,phi)
   y = numeric(length(N))
-  
-  if(!post_flux){if(is.na(pmove[1])){flux=rep(1,length(flux))}else{flux=pmove*N}}
   
   if(median){ post <- post %>% summarise(alpha=median(alpha),phi=median(phi));
   }else
@@ -392,23 +386,22 @@ ERadmatflux <- function(mobility_data,fit,median=FALSE,post_flux=TRUE,pmove=NA)
       normalise = normalise+theta[j,i];
     }
     
-    theta[j,] = flux[j]*theta[j,]/normalise
+    theta[j,] = theta[j,]/normalise
     
     mv[j,] = rnbinom(length(N),mu=theta[j,],size = phi)
   }
   
   return(list(mean=theta,sample=mv))
 }
-
-Stomatflux <- function(mobility_data,fit,median=FALSE,post_flux=TRUE,pmove=NA)
+# Returns conditional movement matrix with rows indexing "from"
+# columns indexing "to"
+Stomatflux <- function(mobility_data,fit,median=FALSE)
 {
   N = mobility_data$N
   r = mobility_data$r
-  flux = mobility_data$flux
   s = mobility_data$s
   y = numeric(length(N))
   post <- fit %>% spread_draws(tau,phi)
-  if(!post_flux){if(is.na(pmove[1])){flux=rep(1,length(flux))}else{flux=pmove*N}}
   
   if(median){ post %>% summarise(tau=median(tau),phi=median(phi));
   }else
@@ -433,23 +426,22 @@ Stomatflux <- function(mobility_data,fit,median=FALSE,post_flux=TRUE,pmove=NA)
       normalise = normalise + theta[j,i];
     }
     
-    theta[j,] = flux[j]*theta[j,]/normalise
+    theta[j,] = theta[j,]/normalise
     mv[j,] = rnbinom(length(N),mu=theta[j,],size = phi)
   }
   
   return(list(mean=theta,sample=mv))
 }
-
-IOmatflux <- function(mobility_data,fit,median=FALSE,post_flux=TRUE,pmove=NA)
+# Returns conditional movement matrix with rows indexing "from"
+# columns indexing "to"
+IOmovemat <- function(mobility_data,fit,median=FALSE)
 {
   N = mobility_data$N
   r = mobility_data$r
-  flux = mobility_data$flux
+ 
   s = mobility_data$s
   y = numeric(length(N))
   post <- fit %>% spread_draws(gamma,phi)
-  
-  if(!post_flux){if(is.na(pmove[1])){flux=rep(1,length(flux))}else{flux=pmove*N}}
   
   if(median){ post %>% summarise(gamma=median(gamma),phi=median(phi));
   }else
@@ -474,7 +466,7 @@ IOmatflux <- function(mobility_data,fit,median=FALSE,post_flux=TRUE,pmove=NA)
       normalise = normalise + theta[j,i];
     }
     
-    theta[j,] = flux[j]*theta[j,]/normalise
+    theta[j,] = theta[j,]/normalise
     mv[j,] = rnbinom(length(N),mu=theta[j,],size = phi)
   }
   
@@ -499,11 +491,11 @@ CPC <- function(L,Lp)
   return(2*res/(sum(L)+sum(Lp)))
 }
 
-CPCpp <- function(mobility_data,fit,model,data, flux_function)
+CPCpp <- function(mobility_data,fit,model,data, move_function)
 {
   
   x<-(t(sapply(1:100,function(i){
-    oot <- flux_function(mobility_data,fit,FALSE,TRUE,NA)
+    oot <- move_function(mobility_data,fit,FALSE)
     cbind(CPC(oot$mean,mobility_data$mv),CPC(oot$sample,mobility_data$mv))
   })))
   
