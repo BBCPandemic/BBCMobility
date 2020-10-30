@@ -5,7 +5,7 @@ require(loo)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
-load('../flux/census_flux.RData')
+load('../../flux/census_flux.RData')
 
 fitCDOR_CE_all <- stan(file = '../../stan/CDORnegbin.stan',
                   data = Ecensus_mobility_dat,

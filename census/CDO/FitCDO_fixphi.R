@@ -10,6 +10,11 @@ load('../../flux/census_flux.RData')
 # Patch data sets to remove outlier LADS
 source('../DropLADSCensus.R')
 
+Ecensus_mobility_dat$phi = 0.1
+Wcensus_mobility_dat$phi = 0.1
+NIcensus_mobility_dat$phi = 0.1
+scotland_census_mobility_dat$phi = 0.1
+
 fitCDO_CSphi1 <- stan(file = '../../stan/CDOnegbin_fixphi.stan',
                       data = scotland_census_mobility_dat,
                       iter = 2000, chains = 4)

@@ -5,10 +5,10 @@ require(loo)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
-load('../flux/census_flux.RData')
+load('../../flux/census_flux.RData')
 
 # Patch data sets to remove outlier LADS
-source('../../DropLADSCensus.R')
+source('../DropLADSCensus.R')
 
 Ecensus_mobility_dat$phi = 0.1
 Wcensus_mobility_dat$phi = 0.1
