@@ -175,124 +175,124 @@ source('./PPDfuncs.R')
 CPCpost <- CPCpp(total_mobility_dat,
                                     fitCDOT,
                                     'CDO','BBC Total (UK)',
-                                    CDOmatflux)  
+                                    CDOmovemat)  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(under18_mobility_dat,
                                        fitCDOU,
                                        'CDO','BBC Under 18 (UK)',
-                                       CDOmatflux))
+                                       CDOmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(a18_30_mobility_dat,
                                        fitCDOU,
                                        'CDO','BBC 18-30 (UK)',
-                                       CDOmatflux))  
+                                       CDOmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(a30_60_mobility_dat,
                                        fitCDOU,
                                        'CDO','BBC 30-60 (UK)',
-                                       CDOmatflux))  
+                                       CDOmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(a60_100_mobility_dat,
                                        fitCDOU,
                                        'CDO','BBC 60-100 (UK)',
-                                       CDOmatflux))  
+                                       CDOmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(education_mobility_dat,
                                        fitCDOEd,
                                        'CDO','BBC Education (UK)',
-                                       CDOmatflux))  
+                                       CDOmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(employed_mobility_dat,
                                        fitCDOEm,
                                        'CDO','BBC Employed (UK)',
-                                       CDOmatflux))  
+                                       CDOmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(neet_mobility_dat,
                                        fitCDON,
                                        'CDO','BBC NEET (UK)',
-                                       CDOmatflux))  
+                                       CDOmovemat))  
 
 
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(total_mobility_dat,
                                        fitCDET,
                                        'CDE','BBC Total (UK)',
-                                       CDEmatflux))  
+                                       CDEmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(under18_mobility_dat,
                                        fitCDEU,
                                        'CDE','BBC Under 18 (UK)',
-                                       CDEmatflux))  
+                                       CDEmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(a18_30_mobility_dat,
                                        fitCDEU,
                                        'CDE','BBC 18-30 (UK)',
-                                       CDEmatflux))  
+                                       CDEmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(a30_60_mobility_dat,
                                        fitCDEU,
                                        'CDE','BBC 30-60 (UK)',
-                                       CDEmatflux))  
+                                       CDEmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(a60_100_mobility_dat,
                                        fitCDEU,
                                        'CDE','BBC 60-100 (UK)',
-                                       CDEmatflux))  
+                                       CDEmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(education_mobility_dat,
                                        fitCDEEd,
                                        'CDE','BBC Education (UK)',
-                                       CDEmatflux))  
+                                       CDEmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(employed_mobility_dat,
                                        fitCDEEm,
                                        'CDE','BBC Employed (UK)',
-                                       CDEmatflux))  
+                                       CDEmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(neet_mobility_dat,
                                        fitCDEN,
                                        'CDE','BBC NEET (UK)',
-                                       CDEmatflux))
+                                       CDEmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(total_mobility_dat,
                                        fitCDPT,
                                        'CDP','BBC Total (UK)',
-                                       CDPmatflux))  
+                                       CDPmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(under18_mobility_dat,
                                        fitCDPU,
                                        'CDP','BBC Under 18 (UK)',
-                                       CDPmatflux))  
+                                       CDPmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(a18_30_mobility_dat,
                                        fitCDPU,
                                        'CDP','BBC 18-30 (UK)',
-                                       CDPmatflux))  
+                                       CDPmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(a30_60_mobility_dat,
                                        fitCDPU,
                                        'CDP','BBC 30-60 (UK)',
-                                       CDPmatflux))  
+                                       CDPmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(a60_100_mobility_dat,
                                        fitCDPU,
                                        'CDP','BBC 60-100 (UK)',
-                                       CDPmatflux))  
+                                       CDPmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(education_mobility_dat,
                                        fitCDPEd,
                                        'CDP','BBC Education (UK)',
-                                       CDPmatflux))  
+                                       CDPmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(employed_mobility_dat,
                                        fitCDPEm,
                                        'CDP','BBC Employed (UK)',
-                                       CDPmatflux))  
+                                       CDPmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(neet_mobility_dat,
                                        fitCDPN,
                                        'CDP','BBC NEET (UK)',
-                                       CDPmatflux))
+                                       CDPmovemat))
 
 
 
@@ -300,42 +300,42 @@ CPCpost <- CPCpost %>% bind_rows(CPCpp(neet_mobility_dat,
 CPCpost <- CPCpost %>% bind_rows(CPCpp(total_mobility_dat,
                                        fitERadT,
                                        'ERad','BBC Total (UK)',
-                                       ERadmatflux))  
+                                       ERadmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(under18_mobility_dat,
                                        fitERadU,
                                        'ERad','BBC Under 18 (UK)',
-                                       ERadmatflux))  
+                                       ERadmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(a18_30_mobility_dat,
                                        fitERadU,
                                        'ERad','BBC 18-30 (UK)',
-                                       ERadmatflux))  
+                                       ERadmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(a30_60_mobility_dat,
                                        fitERadU,
                                        'ERad','BBC 30-60 (UK)',
-                                       ERadmatflux))  
+                                       ERadmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(a60_100_mobility_dat,
                                        fitERadU,
                                        'ERad','BBC 60-100 (UK)',
-                                       ERadmatflux))  
+                                       ERadmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(education_mobility_dat,
                                        fitERadEd,
                                        'ERad','BBC Education (UK)',
-                                       ERadmatflux))  
+                                       ERadmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(employed_mobility_dat,
                                        fitERadEm,
                                        'ERad','BBC Employed (UK)',
-                                       ERadmatflux))  
+                                       ERadmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(neet_mobility_dat,
                                        fitERadN,
                                        'ERad','BBC NEET (UK)',
-                                       ERadmatflux))
+                                       ERadmovemat))
 
 
 
@@ -343,42 +343,42 @@ CPCpost <- CPCpost %>% bind_rows(CPCpp(neet_mobility_dat,
 CPCpost <- CPCpost %>% bind_rows(CPCpp(total_mobility_dat,
                                        fitStoT,
                                        'Sto','BBC Total (UK)',
-                                       Stomatflux))  
+                                       Stomovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(under18_mobility_dat,
                                        fitStoU,
                                        'Sto','BBC Under 18 (UK)',
-                                       Stomatflux))  
+                                       Stomovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(a18_30_mobility_dat,
                                        fitStoU,
                                        'Sto','BBC 18-30 (UK)',
-                                       Stomatflux))  
+                                       Stomovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(a30_60_mobility_dat,
                                        fitStoU,
                                        'Sto','BBC 30-60 (UK)',
-                                       Stomatflux))  
+                                       Stomovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(a60_100_mobility_dat,
                                        fitStoU,
                                        'Sto','BBC 60-100 (UK)',
-                                       Stomatflux))  
+                                       Stomovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(education_mobility_dat,
                                        fitStoEd,
                                        'Sto','BBC Education (UK)',
-                                       Stomatflux))  
+                                       Stomovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(employed_mobility_dat,
                                        fitStoEm,
                                        'Sto','BBC Employed (UK)',
-                                       Stomatflux))  
+                                       Stomovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(neet_mobility_dat,
                                        fitStoN,
                                        'Sto','BBC NEET (UK)',
-                                       Stomatflux))
+                                       Stomovemat))
 
 
 
@@ -387,224 +387,224 @@ CPCpost <- CPCpost %>% bind_rows(CPCpp(neet_mobility_dat,
 CPCpost <- CPCpost %>% bind_rows(CPCpp(total_mobility_dat,
                                        fitImpT,
                                        'Imp','BBC Total (UK)',
-                                       Impmatflux))  
+                                       Impmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(under18_mobility_dat,
                                        fitImpU,
                                        'Imp','BBC Under 18 (UK)',
-                                       Impmatflux))  
+                                       Impmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(a18_30_mobility_dat,
                                        fitImpU,
                                        'Imp','BBC 18-30 (UK)',
-                                       Impmatflux))  
+                                       Impmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(a30_60_mobility_dat,
                                        fitImpU,
                                        'Imp','BBC 30-60 (UK)',
-                                       Impmatflux))  
+                                       Impmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(a60_100_mobility_dat,
                                        fitImpU,
                                        'Imp','BBC 60-100 (UK)',
-                                       Impmatflux))  
+                                       Impmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(education_mobility_dat,
                                        fitImpEd,
                                        'Imp','BBC Education (UK)',
-                                       Impmatflux))  
+                                       Impmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(employed_mobility_dat,
                                        fitImpEm,
                                        'Imp','BBC Employed (UK)',
-                                       Impmatflux))  
+                                       Impmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(neet_mobility_dat,
                                        fitImpN,
                                        'Imp','BBC NEET (UK)',
-                                       Impmatflux))
+                                       Impmovemat))
 
 
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(total_mobility_dat,
                                        fitIOT,
                                        'IO','BBC Total (UK)',
-                                       IOmatflux))  
+                                       IOmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(under18_mobility_dat,
                                        fitIOU,
                                        'IO','BBC Under 18 (UK)',
-                                       IOmatflux))  
+                                       IOmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(a18_30_mobility_dat,
                                        fitIOU,
                                        'IO','BBC 18-30 (UK)',
-                                       IOmatflux))  
+                                       IOmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(a30_60_mobility_dat,
                                        fitIOU,
                                        'IO','BBC 30-60 (UK)',
-                                       IOmatflux))  
+                                       IOmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(a60_100_mobility_dat,
                                        fitIOU,
                                        'IO','BBC 60-100 (UK)',
-                                       IOmatflux))  
+                                       IOmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(education_mobility_dat,
                                        fitIOEd,
                                        'IO','BBC Education (UK)',
-                                       IOmatflux))  
+                                       IOmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(employed_mobility_dat,
                                        fitIOEm,
                                        'IO','BBC Employed (UK)',
-                                       IOmatflux))  
+                                       IOmovemat))  
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(neet_mobility_dat,
                                        fitION,
                                        'IO','BBC NEET (UK)',
-                                       IOmatflux))
+                                       IOmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(E_total_mobility_dat,
                                        fit_E_CDOT,
                                        'CDO','BBC Total (England)',
-                                       CDOmatflux))
+                                       CDOmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(E_total_mobility_dat,
                                        fit_E_CDET,
                                        'CDE','BBC Total (England)',
-                                       CDEmatflux))
+                                       CDEmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(E_total_mobility_dat,
                                        fit_E_CDPT,
                                        'CDP','BBC Total (England)',
-                                       CDPmatflux))
+                                       CDPmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(E_total_mobility_dat,
                                        fit_E_ERadT,
                                        'ERad','BBC Total (England)',
-                                       ERadmatflux))
+                                       ERadmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(E_total_mobility_dat,
                                        fit_E_IOT,
                                        'IO','BBC Total (England)',
-                                       IOmatflux))
+                                       IOmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(E_total_mobility_dat,
                                        fit_E_ImpT,
                                        'Imp','BBC Total (England)',
-                                       Impmatflux))
+                                       Impmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(E_total_mobility_dat,
                                        fit_E_StoT,
                                        'Sto','BBC Total (England)',
-                                       Stomatflux))
+                                       Stomovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(W_total_mobility_dat,
                                        fit_W_CDOT,
                                        'CDO','BBC Total (Wales)',
-                                       CDOmatflux))
+                                       CDOmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(W_total_mobility_dat,
                                        fit_W_CDET,
                                        'CDE','BBC Total (Wales)',
-                                       CDEmatflux))
+                                       CDEmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(W_total_mobility_dat,
                                        fit_W_CDPT,
                                        'CDP','BBC Total (Wales)',
-                                       CDPmatflux))
+                                       CDPmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(W_total_mobility_dat,
                                        fit_W_ERadT,
                                        'ERad','BBC Total (Wales)',
-                                       ERadmatflux))
+                                       ERadmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(W_total_mobility_dat,
                                        fit_W_IOT,
                                        'IO','BBC Total (Wales)',
-                                       IOmatflux))
+                                       IOmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(W_total_mobility_dat,
                                        fit_W_ImpT,
                                        'Imp','BBC Total (Wales)',
-                                       Impmatflux))
+                                       Impmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(W_total_mobility_dat,
                                        fit_W_StoT,
                                        'Sto','BBC Total (Wales)',
-                                       Stomatflux))
+                                       Stomovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(S_total_mobility_dat,
                                        fit_S_CDOT,
                                        'CDO','BBC Total (Scotland)',
-                                       CDOmatflux))
+                                       CDOmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(S_total_mobility_dat,
                                        fit_S_CDET,
                                        'CDE','BBC Total (Scotland)',
-                                       CDEmatflux))
+                                       CDEmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(S_total_mobility_dat,
                                        fit_S_CDPT,
                                        'CDP','BBC Total (Scotland)',
-                                       CDPmatflux))
+                                       CDPmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(S_total_mobility_dat,
                                        fit_S_ERadT,
                                        'ERad','BBC Total (Scotland)',
-                                       ERadmatflux))
+                                       ERadmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(S_total_mobility_dat,
                                        fit_S_IOT,
                                        'IO','BBC Total (Scotland)',
-                                       IOmatflux))
+                                       IOmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(S_total_mobility_dat,
                                        fit_S_ImpT,
                                        'Imp','BBC Total (Scotland)',
-                                       Impmatflux))
+                                       Impmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(S_total_mobility_dat,
                                        fit_S_StoT,
                                        'Sto','BBC Total (Scotland)',
-                                       Stomatflux))
+                                       Stomovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(NI_total_mobility_dat,
                                        fit_NI_CDOT,
                                        'CDO','BBC Total (NI)',
-                                       CDOmatflux))
+                                       CDOmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(NI_total_mobility_dat,
                                        fit_NI_CDET,
                                        'CDE','BBC Total (NI)',
-                                       CDEmatflux))
+                                       CDEmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(NI_total_mobility_dat,
                                        fit_NI_CDPT,
                                        'CDP','BBC Total (NI)',
-                                       CDPmatflux))
+                                       CDPmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(NI_total_mobility_dat,
                                        fit_NI_ERadT,
                                        'ERad','BBC Total (NI)',
-                                       ERadmatflux))
+                                       ERadmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(NI_total_mobility_dat,
                                        fit_NI_IOT,
                                        'IO','BBC Total (NI)',
-                                       IOmatflux))
+                                       IOmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(NI_total_mobility_dat,
                                        fit_NI_ImpT,
                                        'Imp','BBC Total (NI)',
-                                       Impmatflux))
+                                       Impmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(NI_total_mobility_dat,
                                        fit_NI_StoT,
                                        'Sto','BBC Total (NI)',
-                                       Stomatflux))
+                                       Stomovemat))
 
 save(CPCpost,file='CPCpost.RData')
 

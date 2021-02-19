@@ -77,170 +77,147 @@ furthest_from_home <- furthest_from_home %>% mutate(home_country=factor(home_cou
                                                     nextFreq_country = factor(nextFreq_country,levels=c('E','W','S','N')))
 
 
-Ecensus_mobility_dat$N = Ecensus_mobility_dat$N[-c(294,326)]
-Ecensus_mobility_dat$flux = Ecensus_mobility_dat$flux[-c(294,326)]
-Ecensus_mobility_dat$A = Ecensus_mobility_dat$A[-c(294,326)]
-Ecensus_mobility_dat$mv = Ecensus_mobility_dat$mv[-c(294,326),-c(294,326)]
-Ecensus_mobility_dat$r = Ecensus_mobility_dat$r[-c(294,326),-c(294,326)]
-Ecensus_mobility_dat$no_patches = length(Ecensus_mobility_dat$N)
-Ecensus_mobility_dat$L = array(c(-1))
-Ecensus_mobility_dat$Lno = 0
-
-Ecensus_mobility_dat$non_zero = Ecensus_mobility_dat$flux>0
-Ecensus_mobility_dat$no_non_zero = sum(Ecensus_mobility_dat$non_zero)
-
-scotland_census_mobility_dat$N = scotland_census_mobility_dat$N[-c(9)]
-scotland_census_mobility_dat$flux = scotland_census_mobility_dat$flux[-c(9)]
-scotland_census_mobility_dat$A = scotland_census_mobility_dat$A[-c(9)]
-scotland_census_mobility_dat$mv = scotland_census_mobility_dat$mv[-c(9),-c(9)]
-scotland_census_mobility_dat$r = scotland_census_mobility_dat$r[-c(9),-c(9)]
-scotland_census_mobility_dat$s = scotland_census_mobility_dat$s[-c(9),-c(9)]
-scotland_census_mobility_dat$no_patches = length(scotland_census_mobility_dat$N)
-scotland_census_mobility_dat$L = array(c(-1))
-scotland_census_mobility_dat$Lno = 0
-
-scotland_census_mobility_dat$non_zero = scotland_census_mobility_dat$flux>0
-scotland_census_mobility_dat$no_non_zero = sum(scotland_census_mobility_dat$non_zero)
+source('./DropLADSCensus.R')
 
 CPCpost <- CPCpp(Ecensus_mobility_dat,
                  fitCDO_CE,
                  'CDO','England Census',
-                 CDOmatflux)
+                 CDOmovemat)
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(Ecensus_mobility_dat,
                                        fitCDE_CE,
                                        'CDE','England Census',
-                                       CDEmatflux))
+                                       CDEmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(Ecensus_mobility_dat,
                                        fitCDP_CE,
                                        'CDP','England Census',
-                                       CDPmatflux))
+                                       CDPmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(Ecensus_mobility_dat,
                                        fitImp_CE,
                                        'Imp','England Census',
-                                       Impmatflux))
+                                       Impmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(Ecensus_mobility_dat,
                                        fitERad_CE,
                                        'ERad','England Census',
-                                       ERadmatflux))
+                                       ERadmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(Ecensus_mobility_dat,
                                        fitStoufer_CE,
                                        'Sto','England Census',
-                                       Stomatflux))
+                                       Stomovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(Ecensus_mobility_dat,
                                        fitIO_CE,
                                        'IO','England Census',
-                                       IOmatflux))
+                                       IOmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(Wcensus_mobility_dat,
                  fitCDO_CW,
                  'CDO','Wales Census',
-                 CDOmatflux))
+                 CDOmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(Wcensus_mobility_dat,
                                        fitCDE_CW,
                                        'CDE','Wales Census',
-                                       CDEmatflux))
+                                       CDEmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(Wcensus_mobility_dat,
                                        fitCDP_CW,
                                        'CDP','Wales Census',
-                                       CDPmatflux))
+                                       CDPmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(Wcensus_mobility_dat,
                                        fitImp_CW,
                                        'Imp','Wales Census',
-                                       Impmatflux))
+                                       Impmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(Wcensus_mobility_dat,
                                        fitERad_CW,
                                        'ERad','Wales Census',
-                                       ERadmatflux))
+                                       ERadmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(Wcensus_mobility_dat,
                                        fitStoufer_CW,
                                        'Sto','Wales Census',
-                                       Stomatflux))
+                                       Stomovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(Wcensus_mobility_dat,
                                        fitIO_CW,
                                        'IO','Wales Census',
-                                       IOmatflux))
+                                       IOmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(NIcensus_mobility_dat,
                                        fitCDO_CNI,
                                        'CDO','NI Census',
-                                       CDOmatflux))
+                                       CDOmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(NIcensus_mobility_dat,
                                        fitCDE_CNI,
                                        'CDE','NI Census',
-                                       CDEmatflux))
+                                       CDEmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(NIcensus_mobility_dat,
                                        fitCDP_CNI,
                                        'CDP','NI Census',
-                                       CDPmatflux))
+                                       CDPmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(NIcensus_mobility_dat,
                                        fitImp_CNI,
                                        'Imp','NI Census',
-                                       Impmatflux))
+                                       Impmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(NIcensus_mobility_dat,
                                        fitERad_CNI,
                                        'ERad','NI Census',
-                                       ERadmatflux))
+                                       ERadmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(NIcensus_mobility_dat,
                                        fitStoufer_CNI,
                                        'Sto','NI Census',
-                                       Stomatflux))
+                                       Stomovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(NIcensus_mobility_dat,
                                        fitIO_CNI,
                                        'IO','NI Census',
-                                       IOmatflux))
+                                       IOmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(scotland_census_mobility_dat,
                                        fitCDO_CS,
                                        'CDO','Scotland Census',
-                                       CDOmatflux))
+                                       CDOmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(scotland_census_mobility_dat,
                                        fitCDE_CE,
                                        'CDE','Scotland Census',
-                                       CDEmatflux))
+                                       CDEmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(scotland_census_mobility_dat,
                                        fitCDP_CS,
                                        'CDP','Scotland Census',
-                                       CDPmatflux))
+                                       CDPmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(scotland_census_mobility_dat,
                                        fitImp_CS,
                                        'Imp','Scotland Census',
-                                       Impmatflux))
+                                       Impmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(scotland_census_mobility_dat,
                                        fitERad_CS,
                                        'ERad','Scotland Census',
-                                       ERadmatflux))
+                                       ERadmovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(scotland_census_mobility_dat,
                                        fitStoufer_CS,
                                        'Sto','Scotland Census',
-                                       Stomatflux))
+                                       Stomovemat))
 
 CPCpost <- CPCpost %>% bind_rows(CPCpp(scotland_census_mobility_dat,
                                        fitIO_CS,
                                        'IO','Scotland Census',
-                                       IOmatflux))
+                                       IOmovemat))
 
 save(CPCpost,file='CPCpost.RData')
 

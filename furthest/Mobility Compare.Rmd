@@ -1221,8 +1221,6 @@ ggplot(CPCpost %>% filter(is.element(data, c('BBC Total (UK)','BBC Under 18 (UK)
 ```{r imputed flux matrices, echo=FALSE,message=FALSE, fig.path='Figs/',fig.width=5, fig.height=5}
 source('./PPDfuncs.R')
 
-
-
 mobility_dat = list(N=lads_map$all,
                     r = as.matrix(dist(st_coordinates(LADS_centroid %>% select(geometry)))),
                     flux = rep(1,length(lads_map$TotPop)))
@@ -1231,9 +1229,14 @@ census_flux <- as.matrix(UKcensus_flows_lads %>% filter(!(is.na(from)|is.na(to))
 
 census_flux[is.na(census_flux)] = 0
 
-ppCDOCE<-CDOmatflux(mobility_dat,fitCDO_CE,TRUE,FALSE,BBCmoves_by_LAD$census_p_move)
-ppCDOCS<-CDOmatflux(mobility_dat,fitCDO_CS,TRUE,FALSE,BBCmoves_by_LAD$census_p_move)
-ppCDOT<-CDOmatflux(mobility_dat,fitCDOT,TRUE,FALSE,BBCmoves_by_LAD$p_move)
+ppCDOCE_move <- CDOmovemat(mobility_dat,fitCDO_CE,TRUE)
+ppCDOCE_flux <- diag((1-BBCmoves_by_LAD$census_p_move)*lads_map$TotPop)+BBCmoves_by_LAD$census_p_move*lads_map$TotPop*ppCDOCE_move$mean
+
+ppCDOCS_move <- CDOmovemat(mobility_dat,fitCDO_CS,TRUE,BBCmoves_by_LAD$census_p_move)
+ppCDOCS_flux <- diag((1-BBCmoves_by_LAD$census_p_move)*lads_map$TotPop)+BBCmoves_by_LAD$census_p_move*lads_map$TotPop*ppCDOCS_move$mean
+
+ppCDOT_move<-CDOmovemat(mobility_dat,fitCDOT,TRUE)
+ppCDOT_flux <- diag((1-BBCmoves_by_LAD$p_move)*lads_map$TotPop)+BBCmoves_by_LAD$p_move*lads_map$TotPop*ppCDOT_move$mean
 
 # Imputed Flux matrices (Age groups)
 
@@ -1241,61 +1244,69 @@ mobility_dat = list(N=lads_map$under18,
                     r = as.matrix(dist(st_coordinates(LADS_centroid %>% select(geometry)))),
                     flux = rep(1,length(lads_map$TotPop)))
 
-ppCDOU<-CDOmatflux(mobility_dat,fitCDOU,TRUE,FALSE,unlist(age_df %>% filter(group=='Under 18') %>% select(pred_m1r)))
+p_move = unlist(age_df %>% filter(group=='Under 18') %>% select(pred_m1r))
+ppCDOU_move <- CDOmovemat(mobility_dat,fitCDOU,TRUE)
+ppCDOU_flux <- diag((1-p_move)*lads_map$TotPop)+p_move*lads_map$TotPop*ppCDOU_move$mean
 
 mobility_dat = list(N=lads_map$a18_30,
                     r = as.matrix(dist(st_coordinates(LADS_centroid %>% select(geometry)))),
                     flux = rep(1,length(lads_map$TotPop)))
 
-
-ppCDO18_30<-CDOmatflux(mobility_dat,fitCDO18_30,TRUE,FALSE,unlist(age_df %>% filter(group=='18-30') %>% select(pred_m1r)))
+p_move <- unlist(age_df %>% filter(group=='18-30') %>% select(pred_m1r))
+ppCDO18_30_move <- CDOmovemat(mobility_dat,fitCDO18_30,TRUE)
+ppCDO18_30_flux <- diag((1-p_move)*lads_map$TotPop)+p_move*lads_map$TotPop*ppCDO18_30_move$mean
 
 mobility_dat = list(N=lads_map$a30_60,
                     r = as.matrix(dist(st_coordinates(LADS_centroid %>% select(geometry)))),
                     flux = rep(1,length(lads_map$TotPop)))
 
-
-ppCDO30_60<-CDOmatflux(mobility_dat,fitCDO30_60,TRUE,FALSE,unlist(age_df %>% filter(group=='30-60') %>% select(pred_m1r)))
+p_move <- unlist(age_df %>% filter(group=='30-60') %>% select(pred_m1r))
+ppCDO30_60_move <- CDOmovemat(mobility_dat,fitCDO30_60,TRUE)
+ppCDO30_60_flux <- diag((1-p_move)*lads_map$TotPop)+p_move*lads_map$TotPop*ppCDO30_60_move$mean
 
 mobility_dat = list(N=lads_map$a60_100,
                     r = as.matrix(dist(st_coordinates(LADS_centroid %>% select(geometry)))),
                     flux = rep(1,length(lads_map$TotPop)))
 
-ppCDO60_100<-CDOmatflux(mobility_dat,fitCDO60_100,TRUE,FALSE,unlist(age_df %>% filter(group=='60-100') %>% select(pred_m1r)))
+p_move <- unlist(age_df %>% filter(group=='60-100') %>% select(pred_m1r))
+ppCDO60_100_move<-CDOmovemat(mobility_dat,fitCDO60_100,TRUE)
+ppCDO60_100_flux <- diag((1-p_move)*lads_map$TotPop)+p_move*lads_map$TotPop*ppCDO60_100_move$mean
 
-imputed_flux<-as_tibble(melt(ppCDOCE$mean)) %>% mutate(data='E Census')
-imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDOT$mean)) %>% mutate(data='BBC Total'))
-imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDOU$mean)) %>% mutate(data='BBC Under 18'))
-imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDO18_30$mean)) %>% mutate(data='BBC 18-30'))
-imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDO30_60$mean)) %>% mutate(data='BBC 30-60'))
-imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDO60_100$mean)) %>% mutate(data='BBC 60-100'))
+
+imputed_flux<-as_tibble(melt(ppCDOCE_flux)) %>% mutate(data='E Census')
+imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDOT_flux)) %>% mutate(data='BBC Total'))
+imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDOU_flux)) %>% mutate(data='BBC Under 18'))
+imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDO18_30_flux)) %>% mutate(data='BBC 18-30'))
+imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDO30_60_flux)) %>% mutate(data='BBC 30-60'))
+imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDO60_100_flux)) %>% mutate(data='BBC 60-100'))
 
 ggplot(imputed_flux,aes(x=Var1,y=Var2,fill=log10(1+value))) + 
   geom_tile() + scale_fill_distiller(palette='Spectral',name='log10(1+count)') + 
   theme(axis.ticks=element_blank(),axis.text=element_blank(),legend.position = 'bottom') + 
   facet_wrap(~factor(data,levels=c('E Census','BBC Under 18', 'BBC 18-30','BBC Total','BBC 30-60','BBC 60-100')))+ggtitle('Imputed Flux (Competing Destinations)') + xlab('from') + ylab('to')
 
-tmp <- ppCDOT$mean
+
+tmp <- ppCDOT_flux
 colnames(tmp)<-lads_map$lad17cd
 rownames(tmp)<-lads_map$lad17cd
 write.table(tmp,file='../imputed_flux/ppCDOT_furthest.csv',row.names=T,col.names=T)
 
-tmp <- ppCDOU$mean
+tmp <- ppCDOT_flux
 colnames(tmp)<-lads_map$lad17cd
 rownames(tmp)<-lads_map$lad17cd
 write.table(tmp,file='../imputed_flux/ppCDOU_furthest.csv',row.names=T,col.names=T)
 
-tmp <- ppCDO18_30$mean
+tmp <- ppCDOT_flux
 colnames(tmp)<-lads_map$lad17cd
 rownames(tmp)<-lads_map$lad17cd
 write.table(tmp,file='../imputed_flux/ppCDO18_30_furthest.csv',row.names=T,col.names=T)
 
-tmp <- ppCDO30_60$mean
+tmp <- ppCDOT_flux
 colnames(tmp)<-lads_map$lad17cd
 rownames(tmp)<-lads_map$lad17cd
 write.table(tmp,file='../imputed_flux/ppCDO30_60_furthest.csv',row.names=T,col.names=T)
 
-tmp <- ppCDO60_100$mean
+tmp <- ppCDOT_flux
 colnames(tmp)<-lads_map$lad17cd
 rownames(tmp)<-lads_map$lad17cd
 write.table(tmp,file='../imputed_flux/ppCDO60_100_furthest.csv',row.names=T,col.names=T)
@@ -1305,475 +1316,14 @@ write.table(tmp,file='../imputed_flux/ppCDO60_100_furthest.csv',row.names=T,col.
 ## Risk difference between imputed Census and BBC commuter flows
 
 ```{r meta_FOI,echo=FALSE,message=FALSE,warning=FALSE}
-mkflux_mats <-function(theta, move_m, N)
-{
-  Cg = length(theta)
-  if(length(move_m)!=Cg){return(NA)}
-  P  = dim(move_m[[1]])[1]
-  effectiveN = numeric(P)
-  
-  move_sums = lapply(move_m,rowSums)
-  
-  flux_term = lapply(1:Cg,function(g){1.0/((1+theta[[g]]*move_sums[[g]]))})
-  
-  fluxmat = lapply(1:Cg,function(x){matrix(0,P,P)})
-  for(g in 1:Cg)
-  {
-    for(j in 1:P)
-    {
-      effectiveN[j] = effectiveN[j] + N[[g]][j]/(1+theta[g]*move_sums[[g]][j])
-      for(i in 1:P)
-      {
-        effectiveN[j] = effectiveN[j] + theta[g]*move_m[[g]][i,j]*N[[g]][i]/(1+theta[g]*move_sums[[g]][i])
-        fluxmat[[g]][j,i] = theta[g]*move_m[[g]][j,i]*flux_term[[g]][i]*flux_term[[g]][j]
-      }
-    }
-    flux_term[[g]] = flux_term[[g]]^2
-  }
-  return(list(effectiveN=effectiveN,flux_term=flux_term,fluxmat=fluxmat))
-}
+source('./FOIfuncs.R')
 
-calculate_FOI <- function(theta,move_m,N,I)
-{
-  Cg = length(theta)
-  if(length(move_m)!=Cg){return(NA)}
-  P  = dim(move_m[[1]])[1]
-  
-  flux_mats <- mkflux_mats(theta,move_m,N)
-  
-  fluxmat = flux_mats$fluxmat
-  flux_term = flux_mats$flux_term
-  effectiveN = flux_mats$effectiveN
-  
-  term1 = matrix(0,P,Cg)
-  term2 = matrix(0,P,Cg)
-  term3 = matrix(0,P,Cg)
-  
-  for(j in 1:P)
-  {
-    for(g in 1:Cg)
-    {
-      
-      for(k in 1:Cg)
-      {
-        term1[j,g] = term1[j,g] + (I[[k]][j]*flux_term[[k]][j]) / effectiveN[j]
-      }
-      
-      for(i in 1:P)
-      {
-        Itot = 0
-        for(k in 1:Cg)
-        {
-          term2[j,g] = term2[j,g] + I[[k]][i] * fluxmat[[k]][i,j]/effectiveN[j]
-          Itot = Itot + I[[k]][i]
-        }
-        
-        term3[j,g] = term3[j,g] + (fluxmat[[g]][j,i]*Itot)/effectiveN[i]
-        
-      }
-      
-    }
-  
-  }
-  
-  avg_inf_rate = rowSums(sapply(1:Cg,function(g){(term1[,g] + term2[,g] + term3[,g])*N[[g]]}))
-                     
-  return(list(avg_inf_rate=avg_inf_rate,term1=term1,term2=term2,term3=term3,effectiveN=effectiveN))
-  
-}
 
-```
+lads_map_crunch <- st_simplify(lads_map,preserveTopology = TRUE,dTolerance=1000)
+ukoutline_crunch <- st_simplify(ukoutline,preserveTopology = TRUE,dTolerance=1000)
+save(lads_map_crunch,ukoutline_crunch,
+     ppCDOU_move,ppCDO18_30_move,ppCDO30_60_move,ppCDO60_100_move,
+     calculate_FOI,mkflux_mats,file='./ProtoMap/FOIExplore/ShinyDat.RData')
 
-
-```{r risk_map_Haslemere, echo=FALSE,message=FALSE, fig.path='Figs/',fig.width=5, fig.height=5}
-
-I0=numeric(391)
-I0[234]=1
-
-foi_gC<-calculate_FOI(theta=c(1.0),
-                      move_m=list(ppCDOCE$mean/lads_map$all),
-                      N=list(lads_map$all),
-                      I=list(I0)) 
-
-# I0a=numeric(391)
-# I0a[234] = sum(lads_map$under18)/sum(lads_map$all)
-# 
-# I0b=numeric(391)
-# I0b[234] = sum(lads_map$a18_30)/sum(lads_map$all)
-# 
-# I0c=numeric(391)
-# I0c[234] = sum(lads_map$a30_60)/sum(lads_map$all)
-# 
-# I0d=numeric(391)
-# I0d[234] = sum(lads_map$a60_100)/sum(lads_map$all)
-
-
-foi_gU<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
-                      move_m=list(ppCDOU$mean / lads_map$under18,
-                                  ppCDO18_30$mean / lads_map$a18_30,
-                                  ppCDO30_60$mean / lads_map$a30_60,
-                                  ppCDO60_100$mean / lads_map$a60_100),
-                      N=list(lads_map$under18,lads_map$a18_30,
-                             lads_map$a30_60,lads_map$a60_100),
-                      I=list(I0,rep(0,391),rep(0,391),rep(0,391))) 
-
-foi_gCR<-calculate_FOI(theta=c(1.0),
-                       move_m=list(census_flux/lads_map$all),
-                       N=list(lads_map$all),
-                       I=list(I0)) 
-
-foi_gT<-calculate_FOI(theta=c(1.0),
-                      move_m=list(ppCDOT$mean/lads_map$all),
-                      N=list(lads_map$all),
-                      I=list(I0)) 
-
-foi_gU<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
-                      move_m=list(ppCDOU$mean / lads_map$under18,
-                                  ppCDO18_30$mean / lads_map$a18_30,
-                                  ppCDO30_60$mean / lads_map$a30_60,
-                                  ppCDO60_100$mean / lads_map$a60_100),
-                      N=list(lads_map$under18,lads_map$a18_30,
-                             lads_map$a30_60,lads_map$a60_100),
-                      I=list(I0,rep(0,391),rep(0,391),rep(0,391))) 
-
-foi_g18_30<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
-                          move_m=list(ppCDOU$mean / lads_map$under18,
-                                      ppCDO18_30$mean / lads_map$a18_30,
-                                      ppCDO30_60$mean / lads_map$a30_60,
-                                      ppCDO60_100$mean / lads_map$a60_100),
-                      N=list(lads_map$under18,lads_map$a18_30,
-                             lads_map$a30_60,lads_map$a60_100),
-                      I=list(rep(0,391),I0,rep(0,391),rep(0,391)) ) 
-
-foi_g30_60<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
-                          move_m=list(ppCDOU$mean / lads_map$under18,
-                                      ppCDO18_30$mean / lads_map$a18_30,
-                                      ppCDO30_60$mean / lads_map$a30_60,
-                                      ppCDO60_100$mean / lads_map$a60_100),
-                          N=list(lads_map$under18,lads_map$a18_30,
-                                 lads_map$a30_60,lads_map$a60_100),
-                          I=list(rep(0,391),rep(0,391),I0,rep(0,391)) ) 
-
-foi_g60_100<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
-                           move_m=list(ppCDOU$mean / lads_map$under18,
-                                       ppCDO18_30$mean / lads_map$a18_30,
-                                       ppCDO30_60$mean / lads_map$a30_60,
-                                       ppCDO60_100$mean / lads_map$a60_100),
-                          N=list(lads_map$under18,lads_map$a18_30,
-                                 lads_map$a30_60,lads_map$a60_100),
-                          I=list(rep(0,391),rep(0,391),rep(0,391),I0) ) 
-
-z = lads_map %>% mutate(lC = (foi_gC$avg_inf_rate))
-z = z %>% mutate(lT = (foi_gT$avg_inf_rate),
-                 lU = ((foi_gU$avg_inf_rate)-lT),
-                 l18_30 = ((foi_g18_30$avg_inf_rate)-lT),
-                 l30_60 = ((foi_g30_60$avg_inf_rate)-lT),
-                 l60_100 = ((foi_g60_100$avg_inf_rate)-lT))
-
-max_val = max(c(z$lU[-234],z$l18_30[-234],z$l30_60[-234],z$l60_100[-234]),na.rm=T)
-min_val = min(c(z$lU[-234],z$l18_30[-234],z$l30_60[-234],z$l60_100[-234]),na.rm=T)
-
-
-#scale_fill_gradient2(name ='Relative Risk',trans='sqrt',midpoint=1,low=muted('blue'),high=muted('red'),limits=c(min_val,max_val)) + 
-p1=ggplot(st_sf(z[-234,]),aes(fill=lU)) + geom_sf(size=0.0) + 
-  scale_fill_gradient2(midpoint=0,
-                       low=muted('blue'),high=muted('red'),
-                       limits=c(min_val,max_val),name ='Risk Difference') + 
-  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
-  theme(legend.position = "right") + 
-  ggtitle('BBC Under 18')+ theme(text = element_text(size=8))+ 
-  geom_sf(data=ukoutline,fill=NA,size=0.01) +
-  xlim(350000,550000) + ylim(50000,250000)+
-  geom_sf(data=st_sf(z[234,]),fill=NA,size=0.25)
-
-#c(343,351,354)
-
-p2=ggplot(st_sf(z[-234,]),aes(fill=l18_30)) + geom_sf(size=0.0) + 
-  scale_fill_gradient2(midpoint=0,
-                       low=muted('blue'),high=muted('red'),
-                       limits=c(min_val,max_val),name ='Risk Difference') + 
-  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
-  theme(legend.position = "right") + 
-  ggtitle('BBC 18-30')+ theme(text = element_text(size=8))+ 
-  geom_sf(data=ukoutline,fill=NA,size=0.01) +
-  xlim(350000,550000) + ylim(50000,250000)+
-  geom_sf(data=st_sf(z[234,]),fill=NA,size=0.25)
-
-
-p3=ggplot(st_sf(z[-234,]),aes(fill=l30_60)) + geom_sf(size=0.0) + 
-  scale_fill_gradient2(midpoint=0,
-                       low=muted('blue'),high=muted('red'),
-                       limits=c(min_val,max_val),name ='Risk Difference') + 
-  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
-  theme(legend.position = "right") + 
-  ggtitle('BBC 30-60')+ theme(text = element_text(size=8))+ 
-  geom_sf(data=ukoutline,fill=NA,size=0.01) +
-  xlim(350000,550000) + ylim(50000,250000)+
-  geom_sf(data=st_sf(z[234,]),fill=NA,size=0.25)
-
-
-p4=ggplot(st_sf(z[-234,]),aes(fill=l60_100)) + geom_sf(size=0.0) + 
-  scale_fill_gradient2(midpoint=0,
-                       low=muted('blue'),high=muted('red'),
-                       limits=c(min_val,max_val),name ='Risk Difference') + 
-  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
-  theme(legend.position = "right") + 
-  ggtitle('BBC 60-100')+ theme(text = element_text(size=8))+ 
-  geom_sf(data=ukoutline,fill=NA,size=0.01) +
-  xlim(350000,550000) + ylim(50000,250000)+
-  geom_sf(data=st_sf(z[234,]),fill=NA,size=0.25)
-
-p1+p2+p3+p4 + plot_layout(guides='collect')
-
-```
-
-```{r risk_map_Falkirk, echo=FALSE,message=FALSE, fig.path='Figs/',fig.width=5, fig.height=5}
-
-I0=numeric(391)
-I0[344]=1
-
-foi_gC<-calculate_FOI(theta=c(1.0),
-                      move_m=list(ppCDOCE$mean/lads_map$all),
-                      N=list(lads_map$all),
-                      I=list(I0)) 
-
-
-foi_gU<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
-                      move_m=list(ppCDOU$mean / lads_map$under18,
-                                  ppCDO18_30$mean / lads_map$a18_30,
-                                  ppCDO30_60$mean / lads_map$a30_60,
-                                  ppCDO60_100$mean / lads_map$a60_100),
-                      N=list(lads_map$under18,lads_map$a18_30,
-                             lads_map$a30_60,lads_map$a60_100),
-                      I=list(I0,rep(0,391),rep(0,391),rep(0,391))) 
-
-foi_gCR<-calculate_FOI(theta=c(1.0),
-                       move_m=list(census_flux/lads_map$all),
-                       N=list(lads_map$all),
-                       I=list(I0)) 
-
-foi_gT<-calculate_FOI(theta=c(1.0),
-                      move_m=list(ppCDOT$mean/lads_map$all),
-                      N=list(lads_map$all),
-                      I=list(I0)) 
-
-foi_gU<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
-                      move_m=list(ppCDOU$mean / lads_map$under18,
-                                  ppCDO18_30$mean / lads_map$a18_30,
-                                  ppCDO30_60$mean / lads_map$a30_60,
-                                  ppCDO60_100$mean / lads_map$a60_100),
-                      N=list(lads_map$under18,lads_map$a18_30,
-                             lads_map$a30_60,lads_map$a60_100),
-                      I=list(I0,rep(0,391),rep(0,391),rep(0,391))) 
-
-foi_g18_30<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
-                          move_m=list(ppCDOU$mean / lads_map$under18,
-                                      ppCDO18_30$mean / lads_map$a18_30,
-                                      ppCDO30_60$mean / lads_map$a30_60,
-                                      ppCDO60_100$mean / lads_map$a60_100),
-                          N=list(lads_map$under18,lads_map$a18_30,
-                                 lads_map$a30_60,lads_map$a60_100),
-                          I=list(rep(0,391),I0,rep(0,391),rep(0,391)) ) 
-
-foi_g30_60<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
-                          move_m=list(ppCDOU$mean / lads_map$under18,
-                                      ppCDO18_30$mean / lads_map$a18_30,
-                                      ppCDO30_60$mean / lads_map$a30_60,
-                                      ppCDO60_100$mean / lads_map$a60_100),
-                          N=list(lads_map$under18,lads_map$a18_30,
-                                 lads_map$a30_60,lads_map$a60_100),
-                          I=list(rep(0,391),rep(0,391),I0,rep(0,391)) ) 
-
-foi_g60_100<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
-                           move_m=list(ppCDOU$mean / lads_map$under18,
-                                       ppCDO18_30$mean / lads_map$a18_30,
-                                       ppCDO30_60$mean / lads_map$a30_60,
-                                       ppCDO60_100$mean / lads_map$a60_100),
-                           N=list(lads_map$under18,lads_map$a18_30,
-                                  lads_map$a30_60,lads_map$a60_100),
-                           I=list(rep(0,391),rep(0,391),rep(0,391),I0) ) 
-
-z = lads_map %>% mutate(lC = (foi_gC$avg_inf_rate))
-z = z %>% mutate(lT = (foi_gT$avg_inf_rate),
-                 lU = ((foi_gU$avg_inf_rate)-lT),
-                 l18_30 = ((foi_g18_30$avg_inf_rate)-lT),
-                 l30_60 = ((foi_g30_60$avg_inf_rate)-lT),
-                 l60_100 = ((foi_g60_100$avg_inf_rate)-lT))
-
-max_val = max(c(z$lU[-344],z$l18_30[-344],z$l30_60[-344],z$l60_100[-344]),na.rm=T)
-min_val = min(c(z$lU[-344],z$l18_30[-344],z$l30_60[-344],z$l60_100[-344]),na.rm=T)
-
-
-#scale_fill_gradient2(name ='Relative Risk',trans='sqrt',midpoint=1,low=muted('blue'),high=muted('red'),limits=c(min_val,max_val)) + 
-p1=ggplot(st_sf(z[-344,] %>% filter(ctry11NM=='Scotland')),aes(fill=lU)) + geom_sf(size=0.0) + 
-  scale_fill_gradient2(midpoint=0,
-                       low=muted('blue'),high=muted('red'),
-                       limits=c(min_val,max_val),name ='Risk Difference') + 
-  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
-  theme(legend.position = "right") + 
-  ggtitle('BBC Under 18')+ theme(text = element_text(size=8))+
-  geom_sf(data=st_sf(z[344,]),fill=NA,size=0.25)+ 
-  ylim(550000,750000) + xlim(100000,400000)
-
-#c(343,351,354)
-
-p2=ggplot(st_sf(z[-344,]%>% filter(ctry11NM=='Scotland')),aes(fill=l18_30)) + geom_sf(size=0.0) + 
-  scale_fill_gradient2(midpoint=0,
-                       low=muted('blue'),high=muted('red'),
-                       limits=c(min_val,max_val),name ='Risk Difference') + 
-  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
-  theme(legend.position = "right") + 
-  ggtitle('BBC 18-30')+ theme(text = element_text(size=8))+
-  geom_sf(data=st_sf(z[344,]),fill=NA,size=0.25)+
-  ylim(550000,750000) + xlim(100000,400000)
-
-
-p3=ggplot(st_sf(z[-344,]%>% filter(ctry11NM=='Scotland')),aes(fill=l30_60)) + geom_sf(size=0.0) + 
-  scale_fill_gradient2(midpoint=0,
-                       low=muted('blue'),high=muted('red'),
-                       limits=c(min_val,max_val),name ='Risk Difference') + 
-  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
-  theme(legend.position = "right") + 
-  ggtitle('BBC 30-60')+ theme(text = element_text(size=8))+
-  geom_sf(data=st_sf(z[344,]),fill=NA,size=0.25)+
-  ylim(550000,750000) + xlim(100000,400000)
-
-
-p4=ggplot(st_sf(z[-344,]%>% filter(ctry11NM=='Scotland')),aes(fill=l60_100)) + geom_sf(size=0.0) + 
-  scale_fill_gradient2(midpoint=0,
-                       low=muted('blue'),high=muted('red'),
-                       limits=c(min_val,max_val),name ='Risk Difference') + 
-  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
-  theme(legend.position = "right") + 
-  ggtitle('BBC 60-100')+ theme(text = element_text(size=8))+
-  geom_sf(data=st_sf(z[344,]),fill=NA,size=0.25)+
-  ylim(550000,750000) + xlim(100000,400000)
-
-p1+p2+p3+p4 + plot_layout(guides='collect')
-
-```
-
-```{r risk_map_barnet, echo=FALSE,message=FALSE, fig.path='Figs/',fig.width=5, fig.height=5}
-
-I0=numeric(391)
-I0[296]=1
-
-foi_gC<-calculate_FOI(theta=c(1.0),
-                      move_m=list(ppCDOCE$mean/lads_map$all),
-                      N=list(lads_map$all),
-                      I=list(I0)) 
-
-
-foi_gU<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
-                      move_m=list(ppCDOU$mean / lads_map$under18,
-                                  ppCDO18_30$mean / lads_map$a18_30,
-                                  ppCDO30_60$mean / lads_map$a30_60,
-                                  ppCDO60_100$mean / lads_map$a60_100),
-                      N=list(lads_map$under18,lads_map$a18_30,
-                             lads_map$a30_60,lads_map$a60_100),
-                      I=list(I0,rep(0,391),rep(0,391),rep(0,391))) 
-
-foi_gCR<-calculate_FOI(theta=c(1.0),
-                       move_m=list(census_flux/lads_map$all),
-                       N=list(lads_map$all),
-                       I=list(I0)) 
-
-foi_gT<-calculate_FOI(theta=c(1.0),
-                      move_m=list(ppCDOT$mean/lads_map$all),
-                      N=list(lads_map$all),
-                      I=list(I0)) 
-
-foi_gU<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
-                      move_m=list(ppCDOU$mean / lads_map$under18,
-                                  ppCDO18_30$mean / lads_map$a18_30,
-                                  ppCDO30_60$mean / lads_map$a30_60,
-                                  ppCDO60_100$mean / lads_map$a60_100),
-                      N=list(lads_map$under18,lads_map$a18_30,
-                             lads_map$a30_60,lads_map$a60_100),
-                      I=list(I0,rep(0,391),rep(0,391),rep(0,391))) 
-
-foi_g18_30<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
-                          move_m=list(ppCDOU$mean / lads_map$under18,
-                                      ppCDO18_30$mean / lads_map$a18_30,
-                                      ppCDO30_60$mean / lads_map$a30_60,
-                                      ppCDO60_100$mean / lads_map$a60_100),
-                          N=list(lads_map$under18,lads_map$a18_30,
-                                 lads_map$a30_60,lads_map$a60_100),
-                          I=list(rep(0,391),I0,rep(0,391),rep(0,391)) ) 
-
-foi_g30_60<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
-                          move_m=list(ppCDOU$mean / lads_map$under18,
-                                      ppCDO18_30$mean / lads_map$a18_30,
-                                      ppCDO30_60$mean / lads_map$a30_60,
-                                      ppCDO60_100$mean / lads_map$a60_100),
-                          N=list(lads_map$under18,lads_map$a18_30,
-                                 lads_map$a30_60,lads_map$a60_100),
-                          I=list(rep(0,391),rep(0,391),I0,rep(0,391)) ) 
-
-foi_g60_100<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
-                           move_m=list(ppCDOU$mean / lads_map$under18,
-                                       ppCDO18_30$mean / lads_map$a18_30,
-                                       ppCDO30_60$mean / lads_map$a30_60,
-                                       ppCDO60_100$mean / lads_map$a60_100),
-                           N=list(lads_map$under18,lads_map$a18_30,
-                                  lads_map$a30_60,lads_map$a60_100),
-                           I=list(rep(0,391),rep(0,391),rep(0,391),I0) ) 
-
-z = lads_map %>% mutate(lC = (foi_gC$avg_inf_rate))
-z = z %>% mutate(lT = (foi_gT$avg_inf_rate),
-                 lU = ((foi_gU$avg_inf_rate)-lT),
-                 l18_30 = ((foi_g18_30$avg_inf_rate)-lT),
-                 l30_60 = ((foi_g30_60$avg_inf_rate)-lT),
-                 l60_100 = ((foi_g60_100$avg_inf_rate)-lT))
-
-max_val = max(c(z$lU[-296],z$l18_30[-296],z$l30_60[-296],z$l60_100[-296]),na.rm=T)
-min_val = min(c(z$lU[-296],z$l18_30[-296],z$l30_60[-296],z$l60_100[-296]),na.rm=T)
-
-
-#scale_fill_gradient2(name ='Relative Risk',trans='sqrt',midpoint=1,low=muted('blue'),high=muted('red'),limits=c(min_val,max_val)) + 
-p1=ggplot(st_sf(z[-296,] %>% filter(ctry11NM=='England')),aes(fill=lU)) + geom_sf(size=0.0) + 
-  scale_fill_gradient2(midpoint=0,
-                       low=muted('blue'),high=muted('red'),
-                       limits=c(min_val,max_val),name ='Risk Difference') + 
-  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
-  theme(legend.position = "right") + 
-  ggtitle('BBC Under 18')+ theme(text = element_text(size=8))+
-  xlim(450000,600000) + ylim(150000,250000)+
-  geom_sf(data=st_sf(z[296,]),fill=NA,size=0.25)
-
-#c(343,351,354)
-
-p2=ggplot(st_sf(z[-296,]%>% filter(ctry11NM=='England')),aes(fill=l18_30)) + geom_sf(size=0.0) + 
-  scale_fill_gradient2(midpoint=0,
-                       low=muted('blue'),high=muted('red'),
-                       limits=c(min_val,max_val),name ='Risk Difference') + 
-  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
-  theme(legend.position = "right") + 
-  ggtitle('BBC 18-30')+ theme(text = element_text(size=8))+
-  xlim(450000,600000) + ylim(150000,250000)+
-  geom_sf(data=st_sf(z[296,]),fill=NA,size=0.25)
-
-p3=ggplot(st_sf(z[-296,]%>% filter(ctry11NM=='England')),aes(fill=l30_60)) + geom_sf(size=0.0) + 
-  scale_fill_gradient2(midpoint=0,
-                       low=muted('blue'),high=muted('red'),
-                       limits=c(min_val,max_val),name ='Risk Difference') + 
-  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
-  theme(legend.position = "right") + 
-  ggtitle('BBC 30-60')+ theme(text = element_text(size=8))+
-  xlim(450000,600000) + ylim(150000,250000)+
-  geom_sf(data=st_sf(z[296,]),fill=NA,size=0.25)
-
-
-p4=ggplot(st_sf(z[-296,]%>% filter(ctry11NM=='England')),aes(fill=l60_100)) + geom_sf(size=0.0) + 
-  scale_fill_gradient2(midpoint=0,
-                       low=muted('blue'),high=muted('red'),
-                       limits=c(min_val,max_val),name ='Risk Difference') + 
-  theme(axis.text.x=element_blank(),axis.ticks.x=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + 
-  theme(legend.position = "right") + 
-  ggtitle('BBC 60-100')+ theme(text = element_text(size=8))+
-  xlim(450000,600000) + ylim(150000,250000)+
-  geom_sf(data=st_sf(z[296,]),fill=NA,size=0.25)
-
-p1+p2+p3+p4 + plot_layout(guides='collect')
 
 ```

@@ -1,21 +1,31 @@
 # Returns conditional movement matrix with rows indexing "from"
 # columns indexing "to"
-CDPmovemat <- function(mobility_data,fit,median=FALSE)
+CDPmovemat <- function(mobility_data,fit,median=FALSE,phi=NA)
 {
   N = mobility_data$N
   r = mobility_data$r
   
+  if(is.na(phi))
+  {
   post <- fit %>% spread_draws(tau,rho,delta,phi)
   y = numeric(length(N))
   
   if(median){ post <- post %>% summarise(tau=median(tau),rho=median(rho),delta=median(delta),phi=median(phi));
   }else
   {post <- sample_n(post,1)}
+  }else{
+    post <- fit %>% spread_draws(tau,rho,delta)
+    y = numeric(length(N))
+    
+    if(median){ post <- post %>% summarise(tau=median(tau),rho=median(rho),delta=median(delta));
+    }else
+    {post <- sample_n(post,1)}
+  }
   
   tau    = post$tau
   rho    = post$rho
   delta  = post$delta
-  phi    = post$phi
+  if(is.na(phi)){phi    = post$phi}
   
   no_patches = length(N)
   theta = matrix(NA,length(N),length(N))
@@ -54,23 +64,34 @@ CDPmovemat <- function(mobility_data,fit,median=FALSE)
 
 # Returns conditional movement matrix with rows indexing "from"
 # columns indexing "to"
-CDOmovemat <- function(mobility_data,fit,median=FALSE)
+CDOmovemat <- function(mobility_data,fit,median=FALSE,phi=NA)
 {
   N = mobility_data$N
   r = mobility_data$r
-
+  
+  if(is.na(phi))
+  {
   post <- fit %>% spread_draws(tau,rho,delta,alpha,phi)
   y = numeric(length(N))
   
   if(median){ post <- post %>% summarise(tau=median(tau),rho=median(rho),delta=median(delta),alpha=median(alpha),phi=median(phi));
   }else
   {post <- sample_n(post,1)}
+  }else{
+    post <- fit %>% spread_draws(tau,rho,delta,alpha)
+    y = numeric(length(N))
+    
+    if(median){ post <- post %>% summarise(tau=median(tau),rho=median(rho),delta=median(delta),alpha=median(alpha));
+    }else
+    {post <- sample_n(post,1)}
+    
+  }
   
   tau    = post$tau
   rho    = post$rho
   delta  = post$delta
   alpha  = post$alpha
-  phi    = post$phi
+  if(is.na(phi)){phi    = post$phi}
   
   no_patches = length(N)
   theta = matrix(NA,length(N),length(N))
@@ -109,11 +130,13 @@ CDOmovemat <- function(mobility_data,fit,median=FALSE)
 
 # Returns conditional movement matrix with rows indexing "from"
 # columns indexing "to"
-CDEmovemat <- function(mobility_data,fit,median=FALSE)
+CDEmovemat <- function(mobility_data,fit,median=FALSE,phi=NA)
 {
   N = mobility_data$N
   r = mobility_data$r
   
+  if(is.na(phi))
+  {
   post <- fit %>% spread_draws(tau,rho,delta,phi)
   y = numeric(length(N))
   
@@ -121,11 +144,20 @@ CDEmovemat <- function(mobility_data,fit,median=FALSE)
   if(median){ post <- post %>% summarise(tau=median(tau),rho=median(rho),delta=median(delta),phi=median(phi));
   }else
   {post <- sample_n(post,1)}
-  
+  }else{
+    post <- fit %>% spread_draws(tau,rho,delta)
+    y = numeric(length(N))
+    
+    
+    if(median){ post <- post %>% summarise(tau=median(tau),rho=median(rho),delta=median(delta));
+    }else
+    {post <- sample_n(post,1)}
+    
+  }
   tau    = post$tau
   rho    = post$rho
   delta  = post$delta
-  phi    = post$phi
+  if(is.na(phi)){phi    = post$phi}
   
   no_patches = length(N)
   theta = matrix(NA,length(N),length(N))
@@ -164,63 +196,33 @@ CDEmovemat <- function(mobility_data,fit,median=FALSE)
 
 # Returns conditional movement matrix with rows indexing "from"
 # columns indexing "to"
-GPmovemat <- function(mobility_data,fit,median=FALSE)
+CDOmovemat <- function(mobility_data,fit,median=FALSE,phi=NA)
 {
   N = mobility_data$N
   r = mobility_data$r
   
-  post <- fit %>% spread_draws(tau,rho,phi)
-  y = numeric(length(N))
-  
-  if(median){ post <- post %>% summarise(tau=median(tau),rho=median(rho),phi=median(phi));
-  }else
-  {post <- sample_n(post,1)}
-  
-  tau    = post$tau
-  rho    = post$rho
-  phi    = post$phi
-  
-  no_patches = length(N)
-  theta = matrix(NA,length(N),length(N))
-  normalise = numeric(length(N))
-  mv = matrix(NA,length(N),length(N))
-  
-  for(j in 1:no_patches)
+  if(is.na(phi))
   {
-    normalise[j] = 0;
-    for(i in 1:no_patches)
-    {
-      theta[j,i] = .Machine$double.xmin;
-      if(i!=j){
-        theta[j,i] = (N[i]^tau)/(r[j,i]^rho);}
-      normalise[j] = normalise[j] + theta[j,i];
-    }
-    
-    theta[j,] = theta[j,]/normalise[j]
-    mv[j,] = rnbinom(length(N),mu=theta[j,],size = phi)
-  }
-  
-  return(list(mean=theta,sample=mv))
-}
-# Returns conditional movement matrix with rows indexing "from"
-# columns indexing "to"
-CDOmovemat <- function(mobility_data,fit,median=FALSE)
-{
-  N = mobility_data$N
-  r = mobility_data$r
-  
   post <- fit %>% spread_draws(tau,rho,delta,alpha,phi)
   y = numeric(length(N))
   
   if(median){ post <- post %>% summarise(tau=median(tau),rho=median(rho),delta=median(delta),alpha=median(alpha),phi=median(phi));
   }else
   {post <- sample_n(post,1)}
-  
+  }else{
+    post <- fit %>% spread_draws(tau,rho,delta,alpha)
+    y = numeric(length(N))
+    
+    if(median){ post <- post %>% summarise(tau=median(tau),rho=median(rho),delta=median(delta),alpha=median(alpha));
+    }else
+    {post <- sample_n(post,1)}
+    
+  }
   tau    = post$tau
   rho    = post$rho
   delta  = post$delta
   alpha  = post$alpha
-  phi    = post$phi
+  if(is.na(phi)){phi    = post$phi}
   
   no_patches = length(N)
   theta = matrix(NA,length(N),length(N))
@@ -258,22 +260,32 @@ CDOmovemat <- function(mobility_data,fit,median=FALSE)
 }
 # Returns conditional movement matrix with rows indexing "from"
 # columns indexing "to"
-CDEmovemat <- function(mobility_data,fit,median=FALSE)
+CDEmovemat <- function(mobility_data,fit,median=FALSE,phi=NA)
 {
   N = mobility_data$N
   r = mobility_data$r
-
+  
+  if(is.na(phi))
+  {
   post <- fit %>% spread_draws(tau,rho,delta,phi)
   y = numeric(length(N))
   
   if(median){ post <- post %>% summarise(tau=median(tau),rho=median(rho),delta=median(delta),phi=median(phi));
   }else
   {post <- sample_n(post,1)}
-  
+  }else{
+    post <- fit %>% spread_draws(tau,rho,delta)
+    y = numeric(length(N))
+    
+    if(median){ post <- post %>% summarise(tau=median(tau),rho=median(rho),delta=median(delta));
+    }else
+    {post <- sample_n(post,1)}
+    
+  }
   tau    = post$tau
   rho    = post$rho
   delta  = post$delta
-  phi    = post$phi
+  if(is.na(phi)){phi    = post$phi}
   
   no_patches = length(N)
   theta = matrix(NA,length(N),length(N))
@@ -312,19 +324,22 @@ CDEmovemat <- function(mobility_data,fit,median=FALSE)
 
 # Returns conditional movement matrix with rows indexing "from"
 # columns indexing "to"
-Impmovemat <- function(mobility_data,fit,median=FALSE)
+Impmovemat <- function(mobility_data,fit,median=FALSE,phi=NA)
 {
   
   N = mobility_data$N
   r = mobility_data$r
-  post <- fit %>% spread_draws(phi)
-  y = numeric(length(N))
 
+  if(is.na(phi))
+  {
+    post <- fit %>% spread_draws(phi)
+    y = numeric(length(N))
   if(median){ post <- post %>% summarise(phi=median(phi)) ;
   }else
   {post <- sample_n(post,1)}
+  }
   
-  phi    = post$phi
+  if(is.na(phi)){phi    = post$phi}
   
   no_patches = length(N)
   theta = matrix(NA,length(N),length(N))
@@ -352,19 +367,26 @@ Impmovemat <- function(mobility_data,fit,median=FALSE)
 
 # Returns conditional movement matrix with rows indexing "from"
 # columns indexing "to"
-ERadmovemat <- function(mobility_data,fit,median=FALSE)
+ERadmovemat <- function(mobility_data,fit,median=FALSE,phi=NA)
 {
   N = mobility_data$N
   r = mobility_data$r
   s = mobility_data$s
+  if(is.na(phi))
+  {
   post <- fit %>% spread_draws(alpha,phi)
-  y = numeric(length(N))
   
   if(median){ post <- post %>% summarise(alpha=median(alpha),phi=median(phi));
   }else
   {post <- sample_n(post,1)}
-  
-  phi    = post$phi
+  }else
+  {
+    post <- fit %>% spread_draws(alpha)
+    if(median){ post <- post %>% summarise(alpha=median(alpha));
+    }else
+    {post <- sample_n(post,1)}
+  }
+  if(is.na(phi)){phi    = post$phi}
   alpha  = post$alpha
   no_patches = length(N)
   
@@ -395,19 +417,31 @@ ERadmovemat <- function(mobility_data,fit,median=FALSE)
 }
 # Returns conditional movement matrix with rows indexing "from"
 # columns indexing "to"
-Stomatflux <- function(mobility_data,fit,median=FALSE)
+Stomovemat <- function(mobility_data,fit,median=FALSE,phi=NA)
 {
   N = mobility_data$N
   r = mobility_data$r
   s = mobility_data$s
   y = numeric(length(N))
+  
+  if(is.na(phi))
+  {
   post <- fit %>% spread_draws(tau,phi)
   
   if(median){ post %>% summarise(tau=median(tau),phi=median(phi));
   }else
+  {post <- sample_n(post,1)}
+  }else{
+    post <- fit %>% spread_draws(tau)
+    
+    if(median){ post %>% summarise(tau=median(tau));
+    }else
     {post <- sample_n(post,1)}
+    
+  }
   
-  phi    = post$phi
+  
+  if(is.na(phi)){phi    = post$phi}
   tau  = post$tau
   no_patches = length(N)
   
@@ -434,20 +468,32 @@ Stomatflux <- function(mobility_data,fit,median=FALSE)
 }
 # Returns conditional movement matrix with rows indexing "from"
 # columns indexing "to"
-IOmovemat <- function(mobility_data,fit,median=FALSE)
+IOmovemat <- function(mobility_data,fit,median=FALSE,phi=NA)
 {
   N = mobility_data$N
   r = mobility_data$r
- 
+  
   s = mobility_data$s
   y = numeric(length(N))
-  post <- fit %>% spread_draws(gamma,phi)
+  if(is.na(phi))
+  {
+    
+   post <- fit %>% spread_draws(gamma,phi)
   
   if(median){ post %>% summarise(gamma=median(gamma),phi=median(phi));
   }else
+  {post <- sample_n(post,1)}
+  }else
+  {
+    post <- fit %>% spread_draws(gamma)
+    
+    if(median){ post %>% summarise(gamma=median(gamma));
+    }else
     {post <- sample_n(post,1)}
+    
+  }
   
-  phi    = post$phi
+  if(is.na(phi)){phi    = post$phi}
   gamma  = post$gamma
   no_patches = length(N)
   
@@ -491,14 +537,16 @@ CPC <- function(L,Lp)
   return(2*res/(sum(L)+sum(Lp)))
 }
 
-CPCpp <- function(mobility_data,fit,model,data, move_function)
+CPCpp <- function(mobility_data,fit,model,data, move_function,phi=NA)
 {
   
   x<-(t(sapply(1:100,function(i){
-    oot <- move_function(mobility_data,fit,FALSE)
+    oot <- move_function(mobility_data,fit,FALSE,phi)
     cbind(CPC(oot$mean,mobility_data$mv),CPC(oot$sample,mobility_data$mv))
   })))
   
   
   return(tibble(model=model,data=data,sample=1:dim(x)[1],CPCm=as.numeric(x[,1]),CPCpp=as.numeric(x[,2])))
 }
+
+

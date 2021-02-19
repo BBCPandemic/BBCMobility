@@ -99,8 +99,8 @@ CPCpp <- function(mobility_data,fit1,fit2,model1,model2, flux_function)
 {
 
 x<-(t(sapply(1:100,function(i){
-  oot1 <- flux_function(mobility_data,fit1,FALSE,TRUE,NA)
-  oot2 <- flux_function(mobility_data,fit2,FALSE,TRUE,NA)
+  oot1 <- flux_function(mobility_data,fit1,FALSE)
+  oot2 <- flux_function(mobility_data,fit2,FALSE)
   cbind(CPC(oot1$mean,oot2$mean),CPC(oot1$sample,oot2$sample))
 })))
 
@@ -115,42 +115,42 @@ return(tibble(model1=model1,model2=model2,sample=1:dim(x)[1],CPCm=as.numeric(x[,
 CPCcmp_measure <- CPCpp(E_total_mobility_dat,
                  fitCDO_CE,fit_E_CDOTNext,
                  'Census (E)','Next',
-                 CDOmatflux)
+                 CDOmovemat)
 
 CPCcmp_measure <- CPCcmp_measure %>% bind_rows(CPCpp(E_total_mobility_dat,
                  fitCDO_CE,fit_E_CDOTFurthest,
                  'Census (E)','Furthest',
-                 CDOmatflux))
+                 CDOmovemat))
 
 CPCcmp_measure <- CPCcmp_measure %>% bind_rows(CPCpp(S_total_mobility_dat,
                  fitCDO_CS,fit_S_CDOTNext,
                  'Census (S)','Next',
-                 CDOmatflux))
+                 CDOmovemat))
 
 CPCcmp_measure <- CPCcmp_measure %>% bind_rows(CPCpp(S_total_mobility_dat,
                  fitCDO_CS,fit_S_CDOTFurthest,
                  'Census (S)','Furthest',
-                 CDOmatflux))
+                 CDOmovemat))
 
 CPCcmp_measure <- CPCcmp_measure %>% bind_rows(CPCpp(W_total_mobility_dat,
                  fitCDO_CW,fit_W_CDOTNext,
                  'Census (W)','Next',
-                 CDOmatflux))
+                 CDOmovemat))
 
 CPCcmp_measure <- CPCcmp_measure %>% bind_rows(CPCpp(W_total_mobility_dat,
                  fitCDO_CW,fit_W_CDOTFurthest,
                  'Census (W)','Furthest',
-                 CDOmatflux))
+                 CDOmovemat))
 
 CPCcmp_measure <- CPCcmp_measure %>% bind_rows(CPCpp(NI_total_mobility_dat,
                  fitCDO_CNI,fit_NI_CDOTNext,
                  'Census (NI)','Next',
-                 CDOmatflux))
+                 CDOmovemat))
 
 CPCcmp_measure <- CPCcmp_measure %>% bind_rows(CPCpp(NI_total_mobility_dat,
                  fitCDO_CNI,fit_NI_CDOTFurthest,
                  'Census (NI)','Furthest',
-                 CDOmatflux))
+                 CDOmovemat))
 
 cred95 <- function(x){return(data.frame(y=median(x),ymin=quantile(x,c(0.025)),ymax=quantile(x,0.975)))}
 ggplot(CPCcmp_measure,aes(x=factor(model2,levels=c('Next','Furthest')),y=CPCm)) + coord_flip() + stat_summary(fun.data=cred95,size=0.5) + xlab('Measure for Origin Destination Matrix') + ylab('CPC with Census Model') + facet_wrap(~factor(model1,levels=c('Census (E)','Census (W)','Census (S)','Census (NI)')))
@@ -163,87 +163,87 @@ ggplot(CPCcmp_measure,aes(x=factor(model2,levels=c('Next','Furthest')),y=CPCm)) 
 CPCcmp_measureEm <- bind_cols(CPCpp(total_mobility_dat,
                  fitCDO_CE,fitCDOTNext,
                  'Census (E)','Next',
-                 CDOmatflux),category=rep('BBC Total',100))
+                 CDOmovemat),category=rep('BBC Total',100))
 
 CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
                  fitCDO_CE,fitCDOTFurthest,
                  'Census (E)','Furthest',
-                 CDOmatflux),category=rep('BBC Total',100)))
+                 CDOmovemat),category=rep('BBC Total',100)))
 
 CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
                  fitCDO_CE,fitCDOUNext,
                  'Census (E)','Next',
-                 CDOmatflux),category=rep('BBC Under 18',100)))
+                 CDOmovemat),category=rep('BBC Under 18',100)))
 
 
 CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
                  fitCDO_CE,fitCDOUFurthest,
                  'Census (E)','Furthest',
-                 CDOmatflux),category=rep('BBC Under 18',100)))
+                 CDOmovemat),category=rep('BBC Under 18',100)))
 
 CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
                  fitCDO_CE,fitCDOEdNext,
                  'Census (E)','Next',
-                 CDOmatflux),category=rep('BBC Education',100)))
+                 CDOmovemat),category=rep('BBC Education',100)))
 
 CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
                  fitCDO_CE,fitCDOEdFurthest,
                  'Census (E)','Furthest',
-                 CDOmatflux),category=rep('BBC Education',100)))
+                 CDOmovemat),category=rep('BBC Education',100)))
 
 CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
                  fitCDO_CE,fitCDO18_30Next,
                  'Census (E)','Next',
-                 CDOmatflux),category=rep('BBC 18-30',100)))
+                 CDOmovemat),category=rep('BBC 18-30',100)))
 
 
 CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
                  fitCDO_CE,fitCDO18_30Furthest,
                  'Census (E)','Furthest',
-                 CDOmatflux),category=rep('BBC 18-30',100)))
+                 CDOmovemat),category=rep('BBC 18-30',100)))
 
 
 CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
                  fitCDO_CE,fitCDOEmNext,
                  'Census (E)','Next',
-                 CDOmatflux),category=rep('BBC Employed',100)))
+                 CDOmovemat),category=rep('BBC Employed',100)))
 
 CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
                  fitCDO_CE,fitCDOEmFurthest,
                  'Census (E)','Furthest',
-                 CDOmatflux),category=rep('BBC Employed',100)))
+                 CDOmovemat),category=rep('BBC Employed',100)))
 
 CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
                  fitCDO_CE,fitCDO30_60Next,
                  'Census (E)','Next',
-                 CDOmatflux),category=rep('BBC 30-60',100)))
+                 CDOmovemat),category=rep('BBC 30-60',100)))
 
 
 CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
                  fitCDO_CE,fitCDO30_60Furthest,
                  'Census (E)','Furthest',
-                 CDOmatflux),category=rep('BBC 30-60',100)))
+                 CDOmovemat),category=rep('BBC 30-60',100)))
 
 CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
                  fitCDO_CE,fitCDONNext,
                  'Census (E)','Next',
-                 CDOmatflux),category=rep('BBC NEET',100)))
+                 CDOmovemat),category=rep('BBC NEET',100)))
 
 CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
                  fitCDO_CE,fitCDONFurthest,
                  'Census (E)','Furthest',
-                 CDOmatflux),category=rep('BBC NEET',100)))
+                 CDOmovemat),category=rep('BBC NEET',100)))
 
 CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
                  fitCDO_CE,fitCDO60_100Next,
                  'Census (E)','Next',
-                 CDOmatflux),category=rep('BBC 60-100',100)))
+                 CDOmovemat),category=rep('BBC 60-100',100)))
 
 
 CPCcmp_measureEm <- CPCcmp_measureEm %>% bind_rows(bind_cols(CPCpp(total_mobility_dat,
                  fitCDO_CE,fitCDO60_100Furthest,
                  'Census (E)','Furthest',
-                 CDOmatflux),category=rep('BBC 60-100',100)))
+                 CDOmovemat),category=rep('BBC 60-100',100)))
 
 ggplot(CPCcmp_measureEm,aes(x=factor(category,levels=rev(c('BBC Total','BBC Employed','BBC 30-60','BBC Education','BBC 18-30','BBC NEET','BBC 60-100','BBC Under 18'))),y=CPCm)) + coord_flip() + stat_summary(fun.data=cred95,size=0.5) + xlab('') + ylab('CPC with Census (E) Model') + facet_wrap(~ factor(model2,levels=c('Next','Furthest')))
 

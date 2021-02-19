@@ -6,6 +6,7 @@
 #
 #    http://shiny.rstudio.com/
 #
+
 library(shiny)
 require(tidyverse)
 require(ggplot2)
@@ -18,16 +19,13 @@ load('ShinyDat.RData')
 lads_map = lads_map_crunch
 ukoutline = ukoutline_crunch
 
-imputed_flux<-as_tibble(melt(ppCDOU_move$mean)) %>% mutate(data='BBC Under 18')
-imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDO18_30_move$mean)) %>% mutate(data='BBC 18-30'))
-imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDO30_60_move$mean)) %>% mutate(data='BBC 30-60'))
-imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDO60_100_move$mean)) %>% mutate(data='BBC 60-100'))
+source('./FOIfuncs.R')
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
 
     # Application title
-    titlePanel("BBC Mobility - Dominant Age Group"),
+    titlePanel("BBC Mobility - explorer for predicted FOI"),
 
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
@@ -42,7 +40,7 @@ ui <- fluidPage(
                         selected='FoI'),
             selectInput("comparison",
                         "Comparison:",
-                        choices=c('Relative Difference','Total Population','Fraction 60-100'),
+                        choices=c('Relative Difference','Total Population','Fraction 60-100','Net FOI','Net Flux'),
                         selected='Relative Difference')
         ),
 
@@ -53,9 +51,16 @@ ui <- fluidPage(
     )
 )
 
-# Define server logic required to draw a histogram
-server <- function(input, output) {
 
+server <- function(input, output) {
+  
+  
+  
+  imputed_flux<-as_tibble(melt(ppCDOU_move$mean)) %>% mutate(data='BBC Under 18')
+  imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDO18_30_move$mean)) %>% mutate(data='BBC 18-30'))
+  imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDO30_60_move$mean)) %>% mutate(data='BBC 30-60'))
+  imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDO60_100_move$mean)) %>% mutate(data='BBC 60-100'))
+  
     rv <- reactiveValues()
     rv$lads_map_scale = lads_map
     rv$lads_map_scale_flux = lads_map
@@ -63,6 +68,7 @@ server <- function(input, output) {
     rv$foi_net_diff = NULL
     rv$flux_out_norm = NULL
     rv$flux_out_diff = NULL
+    rv$flux_out_abs  = NULL
     rv$flux_in_norm = NULL
     rv$flux_in_diff = NULL
     rv$p1 = NULL
@@ -73,6 +79,8 @@ server <- function(input, output) {
     rv$p6 = NULL
     rv$p7 = NULL
     rv$p8 = NULL
+    rv$p9 = NULL
+
     
     eventReactive(input$index, 'Waverley')
     
@@ -92,6 +100,11 @@ server <- function(input, output) {
   
                      
                      rv$flux_out <- rv$flux_out %>% mutate(lad17nm=lads_map$lad17nm[Var2]) 
+                     
+                     rv$flux_out_abs <- rv$flux_out %>% group_by(Var2) %>% summarise(flux_out=sum(value)) %>% mutate(lad17nm=lads_map$lad17nm[Var2])
+                  
+                     rv$flux_out_abs <- rv$flux_out_abs %>% filter(lad17nm!=input$index)
+                     
                      
                      rv$flux_out_norm <- rv$flux_out %>% group_by(Var2) %>% mutate(value=value/max(value)) %>% 
                          filter(value==1) %>% filter(Var2!=which(lads_map$lad17nm==input$index))
@@ -170,6 +183,8 @@ server <- function(input, output) {
                      
                      foi_net <- foi_net %>% filter(to!=input$index)
                      
+                     rv$foi_net_abs <- foi_net %>% group_by(to) %>% summarise(foi=sum(weight)) %>% mutate(lad17nm=to)
+                     
                      rv$foi_net_norm <- foi_net %>% group_by(to) %>% mutate(weight=weight/(max(weight))) %>% ungroup()
                      
                      #foi_net <- foi_net %>% mutate(weight=weight/max(weight))
@@ -182,34 +197,37 @@ server <- function(input, output) {
                      rv$foi_net_diff <- foi_net %>% group_by(to) %>% summarise(max_diff=diff(sort(weight))[1]/max(weight))
                      
                      
-                     scaling_factor <- (1-unlist(rv$foi_net_diff %>% select(-to)))
+                     # #scaling_factor <- (1-unlist(rv$foi_net_diff %>% select(-to)))
+                     # scaling_factor <- log10(lads_map_d1$TotPop)/max(log10(lads_map_d1$TotPop))
+                     # 
+                     # rv$lads_map_scale = (st_geometry(lads_map_d1$geometry) - 
+                     #                       st_geometry(st_centroid(lads_map_d1))) * scaling_factor + st_geometry(st_centroid(lads_map_d1))
+                     # 
+                     # rv$lads_map_scale = st_set_geometry(lads_map_d1,rv$lads_map_scale)
+                     #  
+                     # st_crs(rv$lads_map_scale) <- st_crs(lads_map)   
+                     # 
+                     # #scaling_factor <- (1-unlist(rv$flux_out_diff %>% ungroup() %>% select(max_diff)))
+                     # scaling_factor <- log10(lads_map_d1$TotPop)/max(log10(lads_map_d1$TotPop))
+                     # 
+                     #  rv$lads_map_scale_flux_out = (st_geometry(lads_map_d1$geometry) - 
+                     #                          st_geometry(st_centroid(lads_map_d1))) * scaling_factor + st_geometry(st_centroid(lads_map_d1))
+                     # 
+                     # rv$lads_map_scale_flux_out = st_set_geometry(lads_map_d1,rv$lads_map_scale_flux_out)
+                     # 
+                     # st_crs(rv$lads_map_scale_flux_out) <- st_crs(lads_map) 
+                     # 
+                     # #scaling_factor <- (1-unlist(rv$flux_in_diff %>% ungroup() %>% select(max_diff)))
+                     # scaling_factor <- log10(lads_map_d1$TotPop)/max(log10(lads_map_d1$TotPop))
+                     # 
+                     # rv$lads_map_scale_flux_in = (st_geometry(lads_map_d1$geometry) - 
+                     #                                   st_geometry(st_centroid(lads_map_d1))) * scaling_factor + st_geometry(st_centroid(lads_map_d1))
+                     # 
+                     # rv$lads_map_scale_flux_in = st_set_geometry(lads_map_d1,rv$lads_map_scale_flux_in)
+                     # 
+                     # st_crs(rv$lads_map_scale_flux_in) <- st_crs(lads_map) 
                      
-                     rv$lads_map_scale = (st_geometry(lads_map_d1$geometry) - 
-                                           st_geometry(st_centroid(lads_map_d1))) * scaling_factor + st_geometry(st_centroid(lads_map_d1))
-                     
-                     rv$lads_map_scale = st_set_geometry(lads_map_d1,rv$lads_map_scale)
-                     
-                     st_crs(rv$lads_map_scale) <- st_crs(lads_map)   
-                     
-                     scaling_factor <- (1-unlist(rv$flux_out_diff %>% ungroup() %>% select(max_diff)))
-                     
-                     rv$lads_map_scale_flux_out = (st_geometry(lads_map_d1$geometry) - 
-                                              st_geometry(st_centroid(lads_map_d1))) * scaling_factor + st_geometry(st_centroid(lads_map_d1))
-                     
-                     rv$lads_map_scale_flux_out = st_set_geometry(lads_map_d1,rv$lads_map_scale_flux_out)
-                     
-                     st_crs(rv$lads_map_scale_flux_out) <- st_crs(lads_map) 
-                     
-                     scaling_factor <- (1-unlist(rv$flux_in_diff %>% ungroup() %>% select(max_diff)))
-                     
-                     rv$lads_map_scale_flux_in = (st_geometry(lads_map_d1$geometry) - 
-                                                       st_geometry(st_centroid(lads_map_d1))) * scaling_factor + st_geometry(st_centroid(lads_map_d1))
-                     
-                     rv$lads_map_scale_flux_in = st_set_geometry(lads_map_d1,rv$lads_map_scale_flux_in)
-                     
-                     st_crs(rv$lads_map_scale_flux_in) <- st_crs(lads_map) 
-                     
-                     rv$p1=ggplot(rv$lads_map_scale %>% 
+                     rv$p1=ggplot(lads_map %>% 
                                    inner_join(rv$foi_net_norm %>% mutate(lad17nm=to))) +
                          geom_sf(col='black',size=0.1,aes(fill=data)) + 
                          scale_fill_brewer(palette ='Spectral',direction=-1) +
@@ -231,7 +249,7 @@ server <- function(input, output) {
                          scale_fill_distiller(palette ='Spectral',direction=-1) +
                          labs(fill='Fraction of population 60-100')
                      
-                     rv$p5=ggplot(rv$lads_map_scale_flux_out %>% 
+                     rv$p5=ggplot(lads_map %>% 
                                    inner_join(rv$flux_out_norm)) +
                          geom_sf(col='black',size=0.1,aes(fill=data)) + 
                          scale_fill_brewer(palette ='Spectral',direction=-1) +
@@ -243,7 +261,7 @@ server <- function(input, output) {
                          scale_fill_distiller(palette ='Spectral',direction=-1) +
                          labs(fill='Relative Difference from Next')
                      
-                     rv$p7=ggplot(rv$lads_map_scale_flux_in %>% 
+                     rv$p7=ggplot(lads_map %>% 
                                    inner_join(rv$flux_in_norm)) +
                          geom_sf(col='black',size=0.1,aes(fill=data)) + 
                          scale_fill_brewer(palette ='Spectral',direction=-1) +
@@ -254,6 +272,25 @@ server <- function(input, output) {
                          geom_sf(col='black',size=0.1,aes(fill=max_diff)) + 
                          scale_fill_distiller(palette ='Spectral',direction=-1) +
                          labs(fill='Relative Difference from Next')
+                     rv$p8=ggplot(lads_map %>% 
+                                    inner_join(rv$flux_in_diff)) +
+                       geom_sf(col='black',size=0.1,aes(fill=max_diff)) + 
+                       scale_fill_distiller(palette ='Spectral',direction=-1) +
+                       labs(fill='Relative Difference from Next')
+                     
+                     rv$p9=ggplot(lads_map %>% 
+                                    inner_join(rv$foi_net_abs)) +
+                       geom_sf(col='black',size=0.1,aes(fill=foi)) + 
+                       scale_fill_distiller(palette ='Spectral',direction=-1,trans='log10') +
+                       labs(fill='Net FOI')
+                     
+                     rv$p10=ggplot(lads_map %>% 
+                                    inner_join(rv$flux_out_abs)) +
+                       geom_sf(col='black',size=0.1,aes(fill=flux_out)) + 
+                       scale_fill_distiller(palette ='Spectral',direction=-1,trans='log10') +
+                       labs(fill='Net Flux')
+                     
+                     
                  })
     
     
@@ -269,7 +306,11 @@ server <- function(input, output) {
             if(input$quantity=='Flux in'){pout = pout + rv$p8}else
         {pout = pout + rv$p2}}else if(input$comparison == 'Total Population')
         {pout = pout + rv$p3}else{
-        pout = pout + p4}
+          if(input$comparison == 'Fraction 60-100'){
+        pout = pout + rv$p4}else{
+          if(input$comparison == 'Net FOI'){pout = pout + rv$p9}else{
+            pout = pout + rv$p10
+          }}}
     
     print(pout) 
     

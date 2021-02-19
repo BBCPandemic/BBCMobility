@@ -1223,7 +1223,7 @@ ppCDOCS_move <- CDOmovemat(mobility_dat,fitCDO_CS,TRUE,BBCmoves_by_LAD$census_p_
 ppCDOCS_flux <- diag((1-BBCmoves_by_LAD$census_p_move)*lads_map$TotPop)+BBCmoves_by_LAD$census_p_move*lads_map$TotPop*ppCDOCS_move$mean
 
 ppCDOT_move<-CDOmovemat(mobility_dat,fitCDOT,TRUE)
-ppCDOCS_flux <- diag((1-BBCmoves_by_LAD$p_move)*lads_map$TotPop)+BBCmoves_by_LAD$p_move*lads_map$TotPop*ppCDOT_move$mean
+ppCDOT_flux <- diag((1-BBCmoves_by_LAD$p_move)*lads_map$TotPop)+BBCmoves_by_LAD$p_move*lads_map$TotPop*ppCDOT_move$mean
 
 # Imputed Flux matrices (Age groups)
 
@@ -1256,16 +1256,16 @@ mobility_dat = list(N=lads_map$a60_100,
                     flux = rep(1,length(lads_map$TotPop)))
 
 p_move <- unlist(age_df %>% filter(group=='60-100') %>% select(pred_m1r))
-ppCDO60_100_move<-CDOmatflux(mobility_dat,fitCDO60_100,TRUE)
-ppCDO30_60_flux <- diag((1-p_move)*lads_map$TotPop)+p_move*lads_map$TotPop*ppCDO60_100_move$mean
+ppCDO60_100_move<-CDOmovemat(mobility_dat,fitCDO60_100,TRUE)
+ppCDO60_100_flux <- diag((1-p_move)*lads_map$TotPop)+p_move*lads_map$TotPop*ppCDO60_100_move$mean
 
 
-imputed_flux<-as_tibble(melt(ppCDOCE_move$mean)) %>% mutate(data='E Census')
-imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDOT_move$mean)) %>% mutate(data='BBC Total'))
-imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDOU_move$mean)) %>% mutate(data='BBC Under 18'))
-imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDO18_30_move$mean)) %>% mutate(data='BBC 18-30'))
-imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDO30_60_move$mean)) %>% mutate(data='BBC 30-60'))
-imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDO60_100_move$mean)) %>% mutate(data='BBC 60-100'))
+imputed_flux<-as_tibble(melt(ppCDOCE_flux)) %>% mutate(data='E Census')
+imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDOT_flux)) %>% mutate(data='BBC Total'))
+imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDOU_flux)) %>% mutate(data='BBC Under 18'))
+imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDO18_30_flux)) %>% mutate(data='BBC 18-30'))
+imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDO30_60_flux)) %>% mutate(data='BBC 30-60'))
+imputed_flux<-imputed_flux %>% bind_rows(as_tibble(melt(ppCDO60_100_flux)) %>% mutate(data='BBC 60-100'))
 
 ggplot(imputed_flux,aes(x=Var1,y=Var2,fill=log10(1+value))) + 
   geom_tile() + scale_fill_distiller(palette='Spectral',name='log10(1+count)') + 
@@ -1273,34 +1273,294 @@ ggplot(imputed_flux,aes(x=Var1,y=Var2,fill=log10(1+value))) +
   facet_wrap(~factor(data,levels=c('E Census','BBC Under 18', 'BBC 18-30','BBC Total','BBC 30-60','BBC 60-100')))+ggtitle('Imputed Flux (Competing Destinations)') + xlab('from') + ylab('to')
 
 
-tmp <- ppCDOT_flux$mean
+tmp <- ppCDOT_flux
 colnames(tmp)<-lads_map$lad17cd
 rownames(tmp)<-lads_map$lad17cd
 write.table(tmp,file='../imputed_flux/ppCDOT_next.csv',row.names=T,col.names=T)
 
-tmp <- ppCDOT_flux$mean
+tmp <- ppCDOT_flux
 colnames(tmp)<-lads_map$lad17cd
 rownames(tmp)<-lads_map$lad17cd
 write.table(tmp,file='../imputed_flux/ppCDOU_next.csv',row.names=T,col.names=T)
 
-tmp <- ppCDOT_flux$mean
+tmp <- ppCDOT_flux
 colnames(tmp)<-lads_map$lad17cd
 rownames(tmp)<-lads_map$lad17cd
 write.table(tmp,file='../imputed_flux/ppCDO18_30_next.csv',row.names=T,col.names=T)
 
-tmp <- ppCDOT_flux$mean
+tmp <- ppCDOT_flux
 colnames(tmp)<-lads_map$lad17cd
 rownames(tmp)<-lads_map$lad17cd
 write.table(tmp,file='../imputed_flux/ppCDO30_60_next.csv',row.names=T,col.names=T)
 
-tmp <- ppCDOT_flux$mean
+tmp <- ppCDOT_flux
 colnames(tmp)<-lads_map$lad17cd
 rownames(tmp)<-lads_map$lad17cd
 write.table(tmp,file='../imputed_flux/ppCDO60_100_next.csv',row.names=T,col.names=T)
 
 ```
+## Risk difference between imputed Census and BBC commuter flows
+
+```{r meta_FOI,echo=FALSE,message=FALSE,warning=FALSE}
+source('./FOIfuncs.R')
+BBCmoves_by_age=age_df
+
+lads_map_crunch <- st_simplify(lads_map,preserveTopology = TRUE,dTolerance=1000)
+ukoutline_crunch <- st_simplify(ukoutline,preserveTopology = TRUE,dTolerance=1000)
+save(lads_map_crunch,ukoutline_crunch,
+     ppCDOCE_move,ppCDOT_move,
+     ppCDOU_move,ppCDO18_30_move,ppCDO30_60_move,ppCDO60_100_move,
+     BBCmoves_by_LAD,BBCmoves_by_age,
+     calculate_FOI,mkflux_mats,file='./ProtoMap/FOIExplore/ShinyDat.RData')
 
 
+```
 
 
+```{r FOI_examples,echo=FALSE,message=FALSE,warning=FALSE, fig.path='Figs/',fig.width=10, fig.height=10}
+     
+mkFOI <- function(index)
+{ 
+  rv = list(foi_net_abs=NULL,foi_net_norm=NULL,foi_net_diff=NULL)
+  
+  I0=numeric(391)
+  I0[which(lads_map$lad17nm==index)]=1
+                     
+                     foi_gU<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
+                                           move_m=list(ppCDOU_move$mean / lads_map$under18,
+                                                       ppCDO18_30_move$mean / lads_map$a18_30,
+                                                       ppCDO30_60_move$mean / lads_map$a30_60,
+                                                       ppCDO60_100_move$mean / lads_map$a60_100),
+                                           N=list(lads_map$under18,lads_map$a18_30,
+                                                  lads_map$a30_60,lads_map$a60_100),
+                                           I=list(I0,rep(0,391),rep(0,391),rep(0,391))) 
+                     
+                     foi_g18_30<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
+                                               move_m=list(ppCDOU_move$mean / lads_map$under18,
+                                                           ppCDO18_30_move$mean / lads_map$a18_30,
+                                                           ppCDO30_60_move$mean / lads_map$a30_60,
+                                                           ppCDO60_100_move$mean / lads_map$a60_100),
+                                               N=list(lads_map$under18,lads_map$a18_30,
+                                                      lads_map$a30_60,lads_map$a60_100),
+                                               I=list(rep(0,391),I0,rep(0,391),rep(0,391)) ) 
+                     
+                     foi_g30_60<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
+                                               move_m=list(ppCDOU_move$mean / lads_map$under18,
+                                                           ppCDO18_30_move$mean / lads_map$a18_30,
+                                                           ppCDO30_60_move$mean / lads_map$a30_60,
+                                                           ppCDO60_100_move$mean / lads_map$a60_100),
+                                               N=list(lads_map$under18,lads_map$a18_30,
+                                                      lads_map$a30_60,lads_map$a60_100),
+                                               I=list(rep(0,391),rep(0,391),I0,rep(0,391)) ) 
+                     
+                     foi_g60_100<-calculate_FOI(theta=c(1.0,1.0,1.0,1.0),
+                                                move_m=list(ppCDOU_move$mean / lads_map$under18,
+                                                            ppCDO18_30_move$mean / lads_map$a18_30,
+                                                            ppCDO30_60_move$mean / lads_map$a30_60,
+                                                            ppCDO60_100_move$mean / lads_map$a60_100),
+                                                N=list(lads_map$under18,lads_map$a18_30,
+                                                       lads_map$a30_60,lads_map$a60_100),
+                                                I=list(rep(0,391),rep(0,391),rep(0,391),I0) ) 
+                     
+                     
+                     foi_net <- tibble(from=lads_map$lad17nm[which(lads_map$lad17nm==index)],to=lads_map$lad17nm,weight=foi_gU$avg_inf_rate,data='Under 18') 
+                     foi_net <- foi_net %>% bind_rows(tibble(from=lads_map$lad17nm[which(lads_map$lad17nm==index)],to=lads_map$lad17nm,weight=foi_g18_30$avg_inf_rate,data='18-30')) 
+                     foi_net <- foi_net %>% bind_rows(tibble(from=lads_map$lad17nm[which(lads_map$lad17nm==index)],to=lads_map$lad17nm,weight=foi_g30_60$avg_inf_rate,data='30-60')) 
+                     foi_net <- foi_net %>% bind_rows(tibble(from=lads_map$lad17nm[which(lads_map$lad17nm==index)],to=lads_map$lad17nm,weight=foi_g60_100$avg_inf_rate,data='60-100'))
+                     
+                     foi_net <- foi_net %>% filter(to!=index)
+                     
+                     rv$foi_net_abs <- foi_net %>% group_by(to) %>% summarise(foi=sum(weight)) %>% mutate(lad17nm=to)
+                     
+                     rv$foi_net_norm <- foi_net %>% group_by(to) %>% mutate(weight=weight/(max(weight))) %>% ungroup()
+                     
+                     #foi_net <- foi_net %>% mutate(weight=weight/max(weight))
+                     
+                     rv$foi_net_norm <- rv$foi_net_norm %>% mutate(data = factor(data,levels=c('Under 18','18-30','30-60','60-100')))
+                     
+                     lads_map_d1 = lads_map %>% filter(lad17nm!=index)
+                     
+                     rv$foi_net_norm <- rv$foi_net_norm %>% filter(weight==1)
+                     rv$foi_net_diff <- foi_net %>% group_by(to) %>% summarise(max_diff=diff(sort(weight))[1]/max(weight))
+ return(rv)               
+}   
+
+rv <- mkFOI('Waverley')
+
+seed_loc = st_coordinates(st_centroid(lads_map %>% filter(lad17nm=='Waverley')))
+
+p1=ggplot(lads_map %>% inner_join(rv$foi_net_norm %>%    mutate(lad17nm=to))) +
+                         geom_sf(aes(fill=data),col='black',size=0.01) + 
+                         scale_fill_brewer(palette ='Spectral',direction=-1) +
+                         labs(fill='Age Group') + ggtitle('A') +
+                         geom_sf(data=lads_map %>% filter(lad17nm=='Waverley'),fill='black',size=0.01) 
+#+                        annotate(geom='label',x=seed_loc[,1],y=seed_loc[,2],label='Waverley')
+                         
+p2=ggplot(lads_map %>% 
+                                    inner_join(rv$foi_net_abs)) +
+                       geom_sf(col='black',size=0.01,aes(fill=foi)) + 
+                       scale_fill_distiller(palette ='Spectral',direction=-1,trans='log10') +
+                       labs(fill='Net FoI') + ggtitle('B') +
+                         geom_sf(data=lads_map %>% filter(lad17nm=='Waverley'),fill='black',size=0.01)
+#+                         annotate(geom='label',x=seed_loc[,1],y=seed_loc[,2],label='Waverley')
+
+p3=ggplot(lads_map) +
+                         geom_sf(col='black',size=0.01,aes(fill=TotPop/AreaKm2)) + 
+                         scale_fill_distiller(palette ='Spectral',direction=-1) +
+                         labs(fill='Population\n Density (km-2)')  + ggtitle('C') 
+#+                      geom_sf(data=lads_map %>% filter(lad17nm=='Waverley'),fill='black',size=0.01)
+                     
+p4=ggplot(lads_map) +
+                         geom_sf(col='black',size=0.01,aes(fill=a60_100/TotPop)) + 
+                         scale_fill_distiller(palette ='Spectral',direction=-1) +
+                         labs(fill='Fraction 60-100') + ggtitle('D') 
+#+                         geom_sf(data=lads_map %>% filter(lad17nm=='Waverley'),fill='black',size=0.01)
+   
+(p1+p2)/(p3+p4)
+
+rv <- mkFOI('Falkirk')
+
+p1=ggplot(lads_map %>% inner_join(rv$foi_net_norm %>%    mutate(lad17nm=to))) +
+                         geom_sf(aes(fill=data),col='black',size=0.01) + 
+                         scale_fill_brewer(palette ='Spectral',direction=-1) +
+                         labs(fill='Age Group') + ggtitle('A') +
+                         geom_sf(data=lads_map %>% filter(lad17nm=='Falkirk'),fill='black',size=0.01)
+
+p2=ggplot(lads_map %>% 
+                                    inner_join(rv$foi_net_abs)) +
+                       geom_sf(col='black',size=0.01,aes(fill=foi)) + 
+                       scale_fill_distiller(palette ='Spectral',direction=-1,trans='log10') +
+                       labs(fill='Net FoI') + ggtitle('B') +
+                         geom_sf(data=lads_map %>% filter(lad17nm=='Falkirk'),fill='black',size=0.01)
+
+p3=ggplot(lads_map) +
+                         geom_sf(col='black',size=0.01,aes(fill=TotPop/AreaKm2)) + 
+                         scale_fill_distiller(palette ='Spectral',direction=-1) +
+                         labs(fill='Population\n Density (km-2)')  + ggtitle('C') 
+#+                      geom_sf(data=lads_map %>% filter(lad17nm=='Waverley'),fill='black',size=0.01)
+                     
+p4=ggplot(lads_map) +
+                         geom_sf(col='black',size=0.01,aes(fill=a60_100/TotPop)) + 
+                         scale_fill_distiller(palette ='Spectral',direction=-1) +
+                         labs(fill='Fraction 60-100') + ggtitle('D') 
+#+                         geom_sf(data=lads_map %>% filter(lad17nm=='Waverley'),fill='black',size=0.01)
+   
+(p1+p2)/(p3+p4)
+
+rv <- mkFOI('Belfast')
+
+p1=ggplot(lads_map %>% inner_join(rv$foi_net_norm %>%    mutate(lad17nm=to))) +
+                         geom_sf(aes(fill=data),col='black',size=0.01) + 
+                         scale_fill_brewer(palette ='Spectral',direction=-1) +
+                         labs(fill='Age Group') + ggtitle('A') +
+                         geom_sf(data=lads_map %>% filter(lad17nm=='Belfast'),fill='black',size=0.01)
+
+p2=ggplot(lads_map %>% 
+                                    inner_join(rv$foi_net_abs)) +
+                       geom_sf(col='black',size=0.01,aes(fill=foi)) + 
+                       scale_fill_distiller(palette ='Spectral',direction=-1,trans='log10') +
+                       labs(fill='Net FoI') + ggtitle('B') +
+                         geom_sf(data=lads_map %>% filter(lad17nm=='Belfast'),fill='black',size=0.01)
+
+p3=ggplot(lads_map) +
+                         geom_sf(col='black',size=0.01,aes(fill=TotPop/AreaKm2)) + 
+                         scale_fill_distiller(palette ='Spectral',direction=-1) +
+                         labs(fill='Population\n Density (km-2)')  + ggtitle('C') 
+#+                      geom_sf(data=lads_map %>% filter(lad17nm=='Waverley'),fill='black',size=0.01)
+                     
+p4=ggplot(lads_map) +
+                         geom_sf(col='black',size=0.01,aes(fill=a60_100/TotPop)) + 
+                         scale_fill_distiller(palette ='Spectral',direction=-1) +
+                         labs(fill='Fraction 60-100') + ggtitle('D') 
+#+                         geom_sf(data=lads_map %>% filter(lad17nm=='Waverley'),fill='black',size=0.01)
+   
+(p1+p2)/(p3+p4)
+
+rv <- mkFOI('Newport')
+
+p1=ggplot(lads_map %>% inner_join(rv$foi_net_norm %>%    mutate(lad17nm=to))) +
+                         geom_sf(aes(fill=data),col='black',size=0.01) + 
+                         scale_fill_brewer(palette ='Spectral',direction=-1) +
+                         labs(fill='Age Group') + ggtitle('A') +
+                         geom_sf(data=lads_map %>% filter(lad17nm=='Newport'),fill='black',size=0.01)
+
+p2=ggplot(lads_map %>% 
+                                    inner_join(rv$foi_net_abs)) +
+                       geom_sf(col='black',size=0.01,aes(fill=foi)) + 
+                       scale_fill_distiller(palette ='Spectral',direction=-1,trans='log10') +
+                       labs(fill='Net FoI') + ggtitle('B') +
+                         geom_sf(data=lads_map %>% filter(lad17nm=='Newport'),fill='black',size=0.01)
+
+p3=ggplot(lads_map) +
+                         geom_sf(col='black',size=0.01,aes(fill=TotPop/AreaKm2)) + 
+                         scale_fill_distiller(palette ='Spectral',direction=-1) +
+                         labs(fill='Population\n Density (km-2)')  + ggtitle('C') 
+#+                      geom_sf(data=lads_map %>% filter(lad17nm=='Waverley'),fill='black',size=0.01)
+                     
+p4=ggplot(lads_map) +
+                         geom_sf(col='black',size=0.01,aes(fill=a60_100/TotPop)) + 
+                         scale_fill_distiller(palette ='Spectral',direction=-1) +
+                         labs(fill='Fraction 60-100') + ggtitle('D') 
+#+                         geom_sf(data=lads_map %>% filter(lad17nm=='Waverley'),fill='black',size=0.01)
+   
+(p1+p2)/(p3+p4)
+
+rv <- mkFOI('Cambridge')
+
+p1=ggplot(lads_map %>% inner_join(rv$foi_net_norm %>%    mutate(lad17nm=to))) +
+                         geom_sf(aes(fill=data),col='black',size=0.01) + 
+                         scale_fill_brewer(palette ='Spectral',direction=-1) +
+                         labs(fill='Age Group') + ggtitle('A') +
+                         geom_sf(data=lads_map %>% filter(lad17nm=='Cambridge'),fill='black',size=0.01)
+
+p2=ggplot(lads_map %>% 
+                                    inner_join(rv$foi_net_abs)) +
+                       geom_sf(col='black',size=0.01,aes(fill=foi)) + 
+                       scale_fill_distiller(palette ='Spectral',direction=-1,trans='log10') +
+                       labs(fill='Net FoI') + ggtitle('B') +
+                         geom_sf(data=lads_map %>% filter(lad17nm=='Cambridge'),fill='black',size=0.01)
+
+p3=ggplot(lads_map) +
+                         geom_sf(col='black',size=0.01,aes(fill=TotPop/AreaKm2)) + 
+                         scale_fill_distiller(palette ='Spectral',direction=-1) +
+                         labs(fill='Population\n Density (km-2)')  + ggtitle('C') 
+#+                      geom_sf(data=lads_map %>% filter(lad17nm=='Waverley'),fill='black',size=0.01)
+                     
+p4=ggplot(lads_map) +
+                         geom_sf(col='black',size=0.01,aes(fill=a60_100/TotPop)) + 
+                         scale_fill_distiller(palette ='Spectral',direction=-1) +
+                         labs(fill='Fraction 60-100') + ggtitle('D') 
+#+                         geom_sf(data=lads_map %>% filter(lad17nm=='Waverley'),fill='black',size=0.01)
+   
+(p1+p2)/(p3+p4)
+
+rv <- mkFOI('Norwich')
+
+p1=ggplot(lads_map %>% inner_join(rv$foi_net_norm %>%    mutate(lad17nm=to))) +
+                         geom_sf(aes(fill=data),col='black',size=0.01) + 
+                         scale_fill_brewer(palette ='Spectral',direction=-1) +
+                         labs(fill='Age Group') + ggtitle('A') +
+                         geom_sf(data=lads_map %>% filter(lad17nm=='Norwich'),fill='black',size=0.01)
+
+p2=ggplot(lads_map %>% 
+                                    inner_join(rv$foi_net_abs)) +
+                       geom_sf(col='black',size=0.01,aes(fill=foi)) + 
+                       scale_fill_distiller(palette ='Spectral',direction=-1,trans='log10') +
+                       labs(fill='Net FoI') + ggtitle('B') +
+                         geom_sf(data=lads_map %>% filter(lad17nm=='Norwich'),fill='black',size=0.01)
+
+p3=ggplot(lads_map) +
+                         geom_sf(col='black',size=0.01,aes(fill=TotPop/AreaKm2)) + 
+                         scale_fill_distiller(palette ='Spectral',direction=-1) +
+                         labs(fill='Population\n Density (km-2)')  + ggtitle('C') 
+#+                      geom_sf(data=lads_map %>% filter(lad17nm=='Waverley'),fill='black',size=0.01)
+                     
+p4=ggplot(lads_map) +
+                         geom_sf(col='black',size=0.01,aes(fill=a60_100/TotPop)) + 
+                         scale_fill_distiller(palette ='Spectral',direction=-1) +
+                         labs(fill='Fraction 60-100') + ggtitle('D') 
+#+                         geom_sf(data=lads_map %>% filter(lad17nm=='Waverley'),fill='black',size=0.01)
+   
+(p1+p2)/(p3+p4)
+```
 
